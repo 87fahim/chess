@@ -34,27 +34,28 @@ const Navbar = () => {
     <>
       <nav className="navbar">
         <div className="navbar-brand">
-          <Link to="/" className="navbar-brand-link">
+          <Link to="/chess" className="navbar-brand-link">
             <img src={appIcon} alt="App Icon" className="app-icon" />
-            <span className="brand-name">SecurePass</span>
+            <span className="brand-name">ChessApp</span>
           </Link>
         </div>
 
         <ul className="navbar-links">
-          <li><Link to="/" className={isActive('/')}>Home</Link></li>
-          <li><Link to="/about" className={isActive('/about')}>About</Link></li>
-          <li><Link to="/services" className={isActive('/services')}>Services</Link></li>
-          <li><Link to="/contact" className={isActive('/contact')}>Contact</Link></li>
           <li><Link to="/chess" className={isActive('/chess')}>Chess</Link></li>
           {isAuthenticated ? (
-            <li>
-              <a href="/logout" className={isActive("/logout")}
-                 onClick={handleLogoutClick}>
-                Logout{user?.username ? `: ${user.username}` : ""}
-              </a>
-            </li>
+            <>
+              <li>
+                <a href="/logout" className={isActive("/logout")}
+                   onClick={handleLogoutClick}>
+                  Logout{user?.username ? `: ${user.username}` : ""}
+                </a>
+              </li>
+            </>
           ) : (
-            <li><Link to="/login" className={isActive('/login')}>Login</Link></li>
+            <>
+              <li><Link to="/login" className={isActive('/login')}>Login</Link></li>
+              <li><Link to="/register" className={isActive('/register')}>Register</Link></li>
+            </>
           )}
         </ul>
 
