@@ -37,6 +37,24 @@ type ChessBoardProps = {
   board: Board;
   orientation: BoardOrientation;
   freeStyle: boolean;
+  showPlayerBadges?: boolean;
+  topPlayer?: {
+    name: string;
+    avatarUrl?: string;
+    isComputer?: boolean;
+    color: "white" | "black";
+  };
+  bottomPlayer?: {
+    name: string;
+    avatarUrl?: string;
+    isComputer?: boolean;
+    color: "white" | "black";
+  };
+  topCapturedPieces?: string[];
+  bottomCapturedPieces?: string[];
+  topAdvantage?: number;
+  bottomAdvantage?: number;
+  checkedKingSquare?: string;
   selectedSquare?: string;
   validMoves?: string[];
   lastMove?: { from: string; to: string };
@@ -70,6 +88,14 @@ export default function ChessBoard({
   board,
   orientation,
   freeStyle,
+  showPlayerBadges = false,
+  topPlayer,
+  bottomPlayer,
+  topCapturedPieces = [],
+  bottomCapturedPieces = [],
+  topAdvantage = 0,
+  bottomAdvantage = 0,
+  checkedKingSquare,
   selectedSquare,
   validMoves = [],
   lastMove,
@@ -183,6 +209,46 @@ export default function ChessBoard({
     </div>
   );
 
+  const renderPlayerBadge = (
+    player: { name: string; avatarUrl?: string; isComputer?: boolean } | undefined,
+    position: "top" | "bottom",
+    capturedPieces: string[],
+    advantage: number
+  ) => {
+    if (!player) {
+      return null;
+    }
+
+    const initial = (player.name?.trim()?.charAt(0) || "P").toUpperCase();
+
+    return (
+      <div className={`board-player-badge board-player-badge-${position}`}>
+        <div className="board-player-avatar" aria-hidden="true">
+          {player.avatarUrl ? (
+            <img src={player.avatarUrl} alt={`${player.name} avatar`} />
+          ) : (
+            <span>{player.isComputer ? "PC" : initial}</span>
+          )}
+        </div>
+        <div className="board-player-meta">
+          <span className="board-player-name">{player.name}</span>
+          {(capturedPieces.length > 0 || advantage > 0) && (
+            <div className="board-captured-row">
+              <div className="board-captured-icons">
+                {capturedPieces.map((piece, index) => (
+                  <span key={`${position}-${piece}-${index}`} className="board-captured-piece" title={piece}>
+                    <img src={pieceMap[piece]} alt={piece} />
+                  </span>
+                ))}
+              </div>
+              {advantage > 0 && <span className="board-captured-advantage">+{advantage}</span>}
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div
       className="chess-board-wrapper"
@@ -191,7 +257,7 @@ export default function ChessBoard({
     >
       {freeStyle && renderOutsideTray(topPieces, "top")}
 
-      <div className="chess-board-container">
+      <div className={`chess-board-container${showPlayerBadges && !freeStyle ? " with-player-badges" : ""}`}>
         {showCoordinates && (
           <div className="ranks-column">
             {rows.map((row) => (
@@ -203,6 +269,8 @@ export default function ChessBoard({
         )}
 
         <div className={`board-and-files${!freeStyle ? " top bottom" : ""}`}>
+          {showPlayerBadges && renderPlayerBadge(topPlayer, "top", topCapturedPieces, topAdvantage)}
+
           <div ref={boardGridRef} className="chess-board-grid">
             {rows.map((row) =>
               cols.map((col) => {
@@ -222,6 +290,7 @@ export default function ChessBoard({
                     piece={piece || undefined}
                     isSelected={selectedSquare === square}
                     isValidMove={validMoves.includes(square)}
+                    isCheckedKing={checkedKingSquare === square}
                     isLastMoveSource={lastMove?.from === square}
                     isLastMoveDestination={lastMove?.to === square}
                     onClick={() => interactive && onSquareClick(square)}
@@ -259,6 +328,8 @@ export default function ChessBoard({
               ))}
             </div>
           )}
+
+          {showPlayerBadges && renderPlayerBadge(bottomPlayer, "bottom", bottomCapturedPieces, bottomAdvantage)}
         </div>
       </div>
 

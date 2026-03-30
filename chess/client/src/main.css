@@ -1,66 +1,64 @@
-
 [data-theme="light"] {
 
-  --bg-dark: hsl(0 0% 85%);
-  --bg: hsl(0 0% 90%);
-  --bg-light: hsl(0 0% 100%);
+  /* Backgrounds */
+  --bg-dark: hsl(40 20% 85%);
+  --bg: hsl(40 25% 92%);
+  --bg-light: hsl(40 30% 98%);
 
+  /* Text */
+  --text: hsl(40 15% 10%);
+  --text-muted: hsl(40 10% 35%);
 
-  --text: hsl(0 0% 5%);
-  --text-muted: hsl(0 0% 30%);
+  /* Gold Accent */
+  --accent: hsl(45 85% 55%); /* rich gold */
 
+  /* Buttons */
+  --btn-bg: hsl(45 90% 45%);
+  --btn-text: hsl(0 0% 10%);
+  --btn-muted-bg: hsl(40 10% 70%);
+  --btn-muted-text: hsl(40 15% 20%);
 
-  --accent: hsl(209, 80%, 46%); 
+  /* Borders & Shadows */
+  --border: hsl(40 15% 80%);
+  --shadow: hsl(40 20% 75%);
 
-
-  --btn-bg: hsl(209, 97%, 25%);;
-  --btn-text: hsl(0 0% 95%);
-  --btn-muted-bg: hsl(0 0% 30%);
-  --btn-muted-text: hsl(0 0% 80%);
-
-
-  --border: hsl(0 0% 80%);
-  --shadow: hsl(0 0% 70%);
-  
-
+  /* Feedback */
   --error: hsl(0 65% 45%);
   --error-bg: hsl(0 70% 95%);
-  --success: hsl(140 50% 35%);
+  --success: hsl(140 45% 35%);
   --success-bg: hsl(140 50% 90%);
 }
 
-
 [data-theme="dark"] {
 
-  --bg-dark: hsl(0 0% 10%);
-  --bg: hsl(0 0% 15%);
-  --bg-light: hsl(0 0% 20%);
+  /* Backgrounds */
+  --bg-dark: hsl(0 0% 5%);
+  --bg: hsl(0 0% 8%);
+  --bg-light: hsl(0 0% 12%);
 
+  /* Text */
+  --text: hsl(45 40% 92%);
+  --text-muted: hsl(45 15% 65%);
 
-  --text: hsl(0 0% 95%);
-  --text-muted: hsl(0 0% 70%);
-
-  /* Accent */
-  --accent: hsl(61, 74%, 63%); /* brighter orange for contrast */
+  /* Gold Accent */
+  --accent: hsl(45 85% 60%);
 
   /* Buttons */
-  --btn-bg: hsl(0 0% 95%);
-  --btn-text: hsl(0 0% 5%);
-  --btn-muted-bg: hsl(0 0% 70%);
-  --btn-muted-text: hsl(0 0% 20%);
+  --btn-bg: hsl(45 90% 55%);
+  --btn-text: hsl(0 0% 10%);
+  --btn-muted-bg: hsl(0 0% 25%);
+  --btn-muted-text: hsl(0 0% 85%);
 
   /* Borders & Shadows */
   --border: hsl(0 0% 20%);
-  --shadow: hsl(0 0% 10%);
+  --shadow: hsl(0 0% 2%);
 
-  /* Feedback States */
+  /* Feedback */
   --error: hsl(0 70% 60%);
-  --error-bg: hsl(0 65% 15%);
+  --error-bg: hsl(0 60% 15%);
   --success: hsl(140 50% 45%);
   --success-bg: hsl(140 40% 15%);
 }
-
-/* Uses variables defined on [data-theme="light"] / [data-theme="dark"] */
 
 body {
   color: var(--text);

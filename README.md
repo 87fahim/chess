@@ -124,6 +124,15 @@ STOCKFISH_PATH=C:/absolute/path/to/stockfish.exe
 
 ### 1 — Install dependencies
 
+From the repository root:
+
+```powershell
+npm install
+npm run install:all
+```
+
+Or install per app if you prefer manual setup:
+
 ```powershell
 # Backend
 cd chess/server
@@ -136,6 +145,14 @@ npm install
 
 ### 2 — Start the backend
 
+From the repository root:
+
+```powershell
+npm run dev:server
+```
+
+Or manually:
+
 ```powershell
 cd chess/server
 node server.js
@@ -143,6 +160,14 @@ node server.js
 ```
 
 ### 3 — Start the frontend
+
+From the repository root:
+
+```powershell
+npm run dev:client
+```
+
+Or manually:
 
 ```powershell
 cd chess/client
@@ -187,6 +212,9 @@ Open http://localhost:5173 in your browser.
 ## Project Structure
 
 ```
+ChessApp/
+├── package.json                  # Root workspace scripts for client/server
+├── README.md
 chess/
 ├── client/                      # React + Vite frontend
 │   └── src/
@@ -212,6 +240,11 @@ chess/
     │   └── userModel.js
     └── stockfishengin/          # ← place your Stockfish binary here
 ```
+
+  Notes:
+
+  - The active app packages are only `chess/client` and `chess/server`.
+  - The repo root now acts as a lightweight npm workspace wrapper for those two packages.
 
 ---
 

@@ -31,7 +31,16 @@
 // export default db;
 import { MongoClient, ServerApiVersion } from "mongodb";
 import dotenv from "dotenv";
-dotenv.config({ path: "./config.env" });
+import path from "path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({
+  path: path.resolve(__dirname, "../config.env"),
+  override: true,
+});
 
 const uri = process.env.ATLAS_URI || "NO ATLAS URI!!!";
 

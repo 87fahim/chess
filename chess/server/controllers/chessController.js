@@ -1,4 +1,33 @@
+import fs from "fs";
+import path from "path";
 import { spawn } from "child_process";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+const bundledStockfishCandidates = [
+  "stockfish-windows-x86-64-avx2.exe",
+  "stockfish-windows-x86-64.exe",
+  "stockfish-ubuntu-x86-64-avx2",
+  "stockfish-macos-m1-apple-silicon",
+  "stockfish-macos-x86-64-modern",
+].map((fileName) => path.resolve(__dirname, "../stockfishengin", fileName));
+
+const resolveStockfishPath = () => {
+  const configuredPath = process.env.STOCKFISH_PATH?.trim();
+
+  if (configuredPath && fs.existsSync(configuredPath)) {
+    return { enginePath: configuredPath, configuredPath };
+  }
+
+  const bundledBinary = bundledStockfishCandidates.find((candidate) => fs.existsSync(candidate));
+  if (bundledBinary) {
+    return { enginePath: bundledBinary, configuredPath };
+  }
+
+  return { enginePath: "stockfish", configuredPath };
+};
 
 const parseStockfishInfoLine = (line) => {
   const depthMatch = line.match(/\bdepth\s+(\d+)/);
@@ -16,7 +45,7 @@ const parseStockfishInfoLine = (line) => {
 
 const getBestMoveFromStockfish = ({ fen, movetime = 2000, depth }) => {
   return new Promise((resolve, reject) => {
-    const enginePath = process.env.STOCKFISH_PATH || "stockfish";
+    const { enginePath, configuredPath } = resolveStockfishPath();
     const engine = spawn(enginePath, []);
 
     let currentDepth;
@@ -52,9 +81,13 @@ const getBestMoveFromStockfish = ({ fen, movetime = 2000, depth }) => {
 
     engine.on("error", (err) => {
       clearTimeout(timeout);
+      const configuredPathMessage = configuredPath
+        ? ` Configured STOCKFISH_PATH was '${configuredPath}'.`
+        : "";
+      const bundledPathMessage = ` Expected a bundled binary under '${path.resolve(__dirname, "../stockfishengin")}'.`;
       rejectOnce(
         new Error(
-          `Failed to start Stockfish. Set STOCKFISH_PATH or install stockfish in PATH. ${err.message}`
+          `Failed to start Stockfish. Set STOCKFISH_PATH to a valid binary, place a Stockfish executable in the server/stockfishengin folder, or install stockfish in PATH.${configuredPathMessage}${bundledPathMessage} ${err.message}`
         )
       );
     });
@@ -130,6 +163,9 @@ export const getNextMove = async (req, res) => {
       return res.status(400).json({ error: "fen is required." });
     }
 
+    // Debug log: inbound board state from UI
+    console.log("[chess][next-move] incoming fen:", fen.trim());
+
     const parsedMoveTime = Number.isFinite(Number(movetime))
       ? Math.max(100, Math.min(10000, Number(movetime)))
       : 2000;
@@ -146,6 +182,9 @@ export const getNextMove = async (req, res) => {
 
     const from = result.bestMoveUci.slice(0, 2);
     const to = result.bestMoveUci.slice(2, 4);
+
+    // Debug log: outbound selected move to UI
+    console.log("[chess][next-move] outgoing move:", result.bestMoveUci);
 
     return res.json({
       bestMoveUci: result.bestMoveUci,

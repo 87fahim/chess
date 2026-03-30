@@ -11,6 +11,8 @@
   margin: 0;
   transition: all 0.2s ease;
   border-radius: 2px;
+  position: relative;
+  overflow: hidden;
 }
 
 .square.light {
@@ -19,6 +21,67 @@
 
 .square.dark {
   background-color: var(--square-dark, #b58863);
+}
+
+.square::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease;
+}
+
+.chess-wrapper.board-pattern-classic .square::before {
+  background-image:
+    linear-gradient(45deg, rgba(214, 170, 42, 0.95) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(214, 170, 42, 0.95) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(214, 170, 42, 0.95) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(214, 170, 42, 0.95) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  opacity: var(--square-pattern-opacity, 0.3);
+}
+
+.chess-wrapper.board-pattern-soft .square::before {
+  background-image:
+    linear-gradient(90deg, rgba(244, 222, 168, 0.85) 1px, transparent 1px),
+    linear-gradient(rgba(244, 222, 168, 0.85) 1px, transparent 1px);
+  background-size: 16px 16px;
+  opacity: var(--square-pattern-opacity, 0.3);
+}
+
+.chess-wrapper.board-pattern-premium .square::before {
+  background-image:
+    linear-gradient(90deg, rgba(229, 183, 47, 0.95) 50%, transparent 50%),
+    linear-gradient(rgba(229, 183, 47, 0.95) 50%, transparent 50%);
+  background-size: 20px 20px;
+  opacity: var(--square-pattern-opacity, 0.3);
+}
+
+.chess-wrapper.board-pattern-three-d .square::before {
+  background:
+    linear-gradient(135deg, rgba(10, 10, 10, 0.85) 25%, transparent 25%) -10px 0,
+    linear-gradient(225deg, rgba(10, 10, 10, 0.85) 25%, transparent 25%) -10px 0,
+    linear-gradient(315deg, rgba(10, 10, 10, 0.85) 25%, transparent 25%),
+    linear-gradient(45deg, rgba(10, 10, 10, 0.85) 25%, rgba(214, 170, 42, 0.9) 25%);
+  background-size: 20px 20px;
+  opacity: var(--square-pattern-opacity, 0.3);
+}
+
+.chess-wrapper.board-pattern-strip .square::before {
+  background-image:
+    linear-gradient(135deg, rgba(12, 12, 12, 0.9), rgba(32, 32, 32, 0.55)),
+    linear-gradient(90deg, rgba(229, 183, 47, 0.6) 50%, transparent 50%),
+    linear-gradient(rgba(229, 183, 47, 0.6) 50%, transparent 50%);
+  background-size: auto, 10px 10px, 10px 10px;
+  background-position: 0 0, 0 0, 0 0;
+  opacity: var(--square-pattern-opacity, 0.3);
+}
+
+.square > * {
+  position: relative;
+  z-index: 1;
 }
 
 .square:hover {
@@ -39,4 +102,84 @@
 
 .square.last-move {
   background-image: linear-gradient(rgba(205, 210, 106, 0.25), rgba(205, 210, 106, 0.25));
+}
+
+.square.checked-king {
+  box-shadow: inset 0 0 0 3px rgba(216, 58, 74, 0.95), inset 0 0 16px rgba(216, 58, 74, 0.35);
+}
+
+.square-pattern-preview-wrap {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.square-pattern-preview {
+  width: 44px;
+  height: 44px;
+  border-radius: 6px;
+  border: 1px solid var(--text-muted, #888);
+  position: relative;
+  overflow: hidden;
+}
+
+.square-pattern-preview.light {
+  background-color: var(--square-light, #f0e6d2);
+}
+
+.square-pattern-preview.dark {
+  background-color: var(--square-dark, #b58863);
+}
+
+.square-pattern-preview::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+}
+
+.chess-wrapper.board-pattern-classic .square-pattern-preview::before {
+  background-image:
+    linear-gradient(45deg, rgba(214, 170, 42, 0.95) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(214, 170, 42, 0.95) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(214, 170, 42, 0.95) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(214, 170, 42, 0.95) 75%);
+  background-size: 20px 20px;
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  opacity: var(--square-pattern-opacity, 0.3);
+}
+
+.chess-wrapper.board-pattern-soft .square-pattern-preview::before {
+  background-image:
+    linear-gradient(90deg, rgba(244, 222, 168, 0.85) 1px, transparent 1px),
+    linear-gradient(rgba(244, 222, 168, 0.85) 1px, transparent 1px);
+  background-size: 16px 16px;
+  opacity: var(--square-pattern-opacity, 0.3);
+}
+
+.chess-wrapper.board-pattern-premium .square-pattern-preview::before {
+  background-image:
+    linear-gradient(90deg, rgba(229, 183, 47, 0.95) 50%, transparent 50%),
+    linear-gradient(rgba(229, 183, 47, 0.95) 50%, transparent 50%);
+  background-size: 20px 20px;
+  opacity: var(--square-pattern-opacity, 0.3);
+}
+
+.chess-wrapper.board-pattern-three-d .square-pattern-preview::before {
+  background:
+    linear-gradient(135deg, rgba(10, 10, 10, 0.85) 25%, transparent 25%) -10px 0,
+    linear-gradient(225deg, rgba(10, 10, 10, 0.85) 25%, transparent 25%) -10px 0,
+    linear-gradient(315deg, rgba(10, 10, 10, 0.85) 25%, transparent 25%),
+    linear-gradient(45deg, rgba(10, 10, 10, 0.85) 25%, rgba(214, 170, 42, 0.9) 25%);
+  background-size: 20px 20px;
+  opacity: var(--square-pattern-opacity, 0.3);
+}
+
+.chess-wrapper.board-pattern-strip .square-pattern-preview::before {
+  background-image:
+    linear-gradient(135deg, rgba(12, 12, 12, 0.9), rgba(32, 32, 32, 0.55)),
+    linear-gradient(90deg, rgba(229, 183, 47, 0.6) 50%, transparent 50%),
+    linear-gradient(rgba(229, 183, 47, 0.6) 50%, transparent 50%);
+  background-size: auto, 10px 10px, 10px 10px;
+  background-position: 0 0, 0 0, 0 0;
+  opacity: var(--square-pattern-opacity, 0.3);
 }

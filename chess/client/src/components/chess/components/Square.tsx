@@ -102,6 +102,7 @@ type SquareProps = {
   piece?: PieceCode;
   isSelected?: boolean;
   isValidMove?: boolean;
+  isCheckedKing?: boolean;
   isLastMoveSource?: boolean;
   isLastMoveDestination?: boolean;
   onClick?: () => void;
@@ -117,6 +118,7 @@ export default function Square({
   piece,
   isSelected = false,
   isValidMove = false,
+  isCheckedKing = false,
   isLastMoveSource = false,
   isLastMoveDestination = false,
   onClick,
@@ -125,7 +127,7 @@ export default function Square({
 }: SquareProps) {
   const isDark = (row + col) % 2 === 1;
 
-  const className = ["square", isDark ? "dark" : "light", isSelected && "selected", isValidMove && "valid-move", (isLastMoveSource || isLastMoveDestination) && "last-move"]
+  const className = ["square", isDark ? "dark" : "light", isSelected && "selected", isValidMove && "valid-move", isCheckedKing && "checked-king", (isLastMoveSource || isLastMoveDestination) && "last-move"]
     .filter(Boolean)
     .join(" ");
 

@@ -3,9 +3,8 @@
   font-size: 1.2rem;
   font-weight: bold;
   color: var(--text);
-  padding: 0.3rem;
-  background-color: var(--bg);
-  border-radius: 4px;
+  padding: 0.5rem 0.7rem;
+  border-radius: 8px;
   border-left: 4px solid var(--accent);
   transition: all 0.3s ease;
 }
@@ -107,6 +106,9 @@
   justify-content: space-between;
   margin-bottom: 0.6rem;
   color: var(--text);
+  border-radius: 8px;
+  padding: 0.55rem 0.7rem;
+  overflow: hidden;
 }
 .move-popup-header strong{
 width: 100%;

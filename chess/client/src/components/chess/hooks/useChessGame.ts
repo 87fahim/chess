@@ -349,7 +349,13 @@ export default function useChessGame({
       return false;
     }
 
-    const move = ruleGame.move({ from, to, promotion: "q" });
+    let move;
+    try {
+      move = ruleGame.move({ from, to, promotion: "q" });
+    } catch {
+      return false;
+    }
+
     if (!move) {
       return false;
     }
@@ -650,7 +656,13 @@ export default function useChessGame({
     const to = trimmed.slice(2, 4);
     const promotion = trimmed.length === 5 ? trimmed[4] : "q";
 
-    const move = ruleGame.move({ from, to, promotion });
+    let move;
+    try {
+      move = ruleGame.move({ from, to, promotion });
+    } catch {
+      return false;
+    }
+
     if (!move) {
       return false;
     }
