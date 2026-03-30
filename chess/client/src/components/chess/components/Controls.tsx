@@ -1,26 +1,33 @@
-type ControlsProps = {
-  onUndo: () => void;
-  onReset: () => void;
-  onFlip: () => void;
-  onClearAll: () => void;
-  onNextMove?: () => void;
-  freeStyle?: boolean;
-  allowUndo?: boolean;
-  allowReset?: boolean;
-  allowFlip?: boolean;
-  allowClearAll?: boolean;
-  moveCount?: number;
-  onOpenMoves?: () => void;
-  onOpenSettings?: () => void;
-  nextMoveLoading?: boolean;
-  nextMoveDisabled?: boolean;
-  nextMoveDisabledReason?: string;
-  suggestedMoveText?: string;
-  onApplySuggestedMove?: () => void;
-  nextMoveError?: string;
-};
+import { useChessPanelActions, useChessPanelState } from "../context/ChessPanelContext";
 
-export default function Controls({ onUndo, onReset, onFlip, onClearAll, onNextMove, freeStyle = true, allowUndo = true, allowReset = true, allowFlip = true, allowClearAll = true, moveCount, onOpenMoves, onOpenSettings, nextMoveLoading = false, nextMoveDisabled = false, nextMoveDisabledReason, suggestedMoveText, onApplySuggestedMove, nextMoveError }: ControlsProps) {
+export default function Controls() {
+  const {
+    freeStyle,
+    allowUndo,
+    allowReset,
+    allowFlip,
+    allowClearAll,
+    moveCount,
+    showMoveList,
+    nextMoveLoading,
+    nextMoveDisabled,
+    nextMoveDisabledReason,
+    suggestedMoveText,
+    nextMoveError,
+    canRequestNextMove,
+    canApplySuggestedMove,
+  } = useChessPanelState();
+  const {
+    onUndo,
+    onReset,
+    onFlip,
+    onClearAll,
+    onNextMove,
+    onApplySuggestedMove,
+    onOpenMoves,
+    onOpenSettings,
+  } = useChessPanelActions();
+
   return (
     <div className="controls">
       {allowUndo && (
@@ -48,7 +55,7 @@ export default function Controls({ onUndo, onReset, onFlip, onClearAll, onNextMo
           🗙 Clear Baord
         </button>
       )}
-      {onNextMove !== undefined && (
+      {canRequestNextMove && (
         <button
           className="control-btn"
           onClick={onNextMove}
@@ -58,7 +65,7 @@ export default function Controls({ onUndo, onReset, onFlip, onClearAll, onNextMo
           {nextMoveLoading ? "⌛ Thinking..." : "▶ Next Move"}
         </button>
       )}
-      {suggestedMoveText && onApplySuggestedMove && (
+      {suggestedMoveText && canApplySuggestedMove && (
         <div className="suggested-move-row">
           <span className="suggested-move-label">Suggestion:</span>
           <button className="suggested-move-link" onClick={onApplySuggestedMove} title="Apply suggested move">
@@ -67,16 +74,14 @@ export default function Controls({ onUndo, onReset, onFlip, onClearAll, onNextMo
         </div>
       )}
       {nextMoveError && <div className="next-move-error">{nextMoveError}</div>}
-      {onOpenMoves !== undefined && (
+      {showMoveList && (
         <button className="control-btn" onClick={onOpenMoves} title="View move history">
-          ☰ Moves ({moveCount ?? 0})
+          ☰ Moves ({moveCount})
         </button>
       )}
-      {onOpenSettings !== undefined && (
-        <button className="control-btn" onClick={onOpenSettings} title="Open settings">
-          ⚙ Settings
-        </button>
-      )}
+      <button className="control-btn" onClick={onOpenSettings} title="Open settings">
+        ⚙ Settings
+      </button>
     </div>
   );
 }

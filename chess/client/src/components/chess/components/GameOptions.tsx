@@ -1,48 +1,29 @@
 import React from "react";
 import "../styles/game-options.css";
+import { useChessPanelActions, useChessPanelState } from "../context/ChessPanelContext";
+import { GameMode } from "../context/chessPanel.types";
 
 export type PieceColorPreset = "classic" | "sapphire" | "emerald" | "ruby" | "gold";
-export type GameMode = "vs-computer" | "vs-player" | "practice" | "online";
+export type { GameMode };
 
-type GameOptionsProps = {
-  gameMode: GameMode;
-  computerLevel: number;
-  computerLevelLocked: boolean;
-  computerGameConfigured?: boolean;
-  computerSetupRequired?: boolean;
-  turn: "white" | "black";
-  castlingRights: {
-    whiteKingSide: boolean;
-    whiteQueenSide: boolean;
-    blackKingSide: boolean;
-    blackQueenSide: boolean;
-  };
-  onGameModeChange: (mode: GameMode) => void;
-  onStartComputerGame: (color: "white" | "black") => void;
-  onComputerLevelChange: (level: number) => void;
-  onTurnChange: (turn: "white" | "black") => void;
-  onCastlingChange: (rights: {
-    whiteKingSide: boolean;
-    whiteQueenSide: boolean;
-    blackKingSide: boolean;
-    blackQueenSide: boolean;
-  }) => void;
-};
+export default function GameOptions() {
+  const {
+    gameMode,
+    computerLevel,
+    computerLevelLocked,
+    computerGameConfigured,
+    computerSetupRequired,
+    turn,
+    castlingRights,
+  } = useChessPanelState();
+  const {
+    onGameModeChange,
+    onStartComputerGame,
+    onComputerLevelChange,
+    onTurnChange,
+    onCastlingChange,
+  } = useChessPanelActions();
 
-export default function GameOptions({
-  gameMode,
-  computerLevel,
-  computerLevelLocked,
-  computerGameConfigured = false,
-  computerSetupRequired = false,
-  turn,
-  castlingRights,
-  onGameModeChange,
-  onStartComputerGame,
-  onComputerLevelChange,
-  onTurnChange,
-  onCastlingChange,
-}: GameOptionsProps) {
   const isPractice = gameMode === "practice";
   const ratingOptions = Array.from({ length: 33 }, (_, i) => 300 + i * 100);
 

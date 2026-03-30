@@ -2,79 +2,23 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { BoardOrientation } from "../Chess.types";
 import Square from "./Square";
 import { PieceCode } from "./Piece";
-import { Board } from "../logic/chessEngine";
+import { pieceMap } from "./pieceMap";
+import OutsideTray from "./OutsideTray";
+import BoardPlayerBadge, { BoardPlayer } from "./BoardPlayerBadge";
+import { useChessBoardActions, useChessBoardState } from "../context/ChessContext";
 import "../styles/square.css";
 
-import wp from "../assets/pieces/wp.svg";
-import wn from "../assets/pieces/wn.svg";
-import wb from "../assets/pieces/wb.svg";
-import wr from "../assets/pieces/wr.svg";
-import wq from "../assets/pieces/wq.svg";
-import wk from "../assets/pieces/wk.svg";
-import bp from "../assets/pieces/bp.svg";
-import bn from "../assets/pieces/bn.svg";
-import bb from "../assets/pieces/bb.svg";
-import br from "../assets/pieces/br.svg";
-import bq from "../assets/pieces/bq.svg";
-import bk from "../assets/pieces/bk.svg";
-
-const pieceMap: Record<string, string> = {
-  wp,
-  wn,
-  wb,
-  wr,
-  wq,
-  wk,
-  bp,
-  bn,
-  bb,
-  br,
-  bq,
-  bk,
-};
-
-type ChessBoardProps = {
-  board: Board;
-  orientation: BoardOrientation;
-  freeStyle: boolean;
+type ChessBoardPlayersProps = {
   showPlayerBadges?: boolean;
-  topPlayer?: {
-    name: string;
-    avatarUrl?: string;
-    isComputer?: boolean;
-    color: "white" | "black";
-  };
-  bottomPlayer?: {
-    name: string;
-    avatarUrl?: string;
-    isComputer?: boolean;
-    color: "white" | "black";
-  };
+  topPlayer?: BoardPlayer;
+  bottomPlayer?: BoardPlayer;
   topCapturedPieces?: string[];
   bottomCapturedPieces?: string[];
   topAdvantage?: number;
   bottomAdvantage?: number;
-  checkedKingSquare?: string;
-  selectedSquare?: string;
-  validMoves?: string[];
-  lastMove?: { from: string; to: string };
-  onSquareClick: (square: string) => void;
-  showCoordinates?: boolean;
-  interactive?: boolean;
-  whitePieces: string[];
-  blackPieces: string[];
-  onDragStart: (piece: string, fromSquare?: string, fromOutside?: boolean) => void;
-  onDrop: (
-    toSquare: string,
-    draggedPiece: string,
-    fromSquare?: string,
-    fromOutside?: boolean
-  ) => void;
-  onDropOutside: (
-    draggedPiece: string,
-    fromSquare?: string,
-    fromOutside?: boolean
-  ) => void;
+};
+
+type ChessBoardAnimationProps = {
   animatedMove?: {
     from: string;
     to: string;
@@ -84,32 +28,40 @@ type ChessBoardProps = {
   onAnimatedMoveEnd?: () => void;
 };
 
+type ChessBoardProps = {
+  players: ChessBoardPlayersProps;
+  animation?: ChessBoardAnimationProps;
+};
+
 export default function ChessBoard({
-  board,
-  orientation,
-  freeStyle,
-  showPlayerBadges = false,
-  topPlayer,
-  bottomPlayer,
-  topCapturedPieces = [],
-  bottomCapturedPieces = [],
-  topAdvantage = 0,
-  bottomAdvantage = 0,
-  checkedKingSquare,
-  selectedSquare,
-  validMoves = [],
-  lastMove,
-  onSquareClick,
-  showCoordinates = true,
-  interactive = true,
-  whitePieces,
-  blackPieces,
-  onDragStart,
-  onDrop,
-  onDropOutside,
-  animatedMove,
-  onAnimatedMoveEnd,
+  players,
+  animation,
 }: ChessBoardProps) {
+  const {
+    board,
+    selectedSquare,
+    validMoves,
+    lastMove,
+    checkedKingSquare,
+    orientation,
+    freeStyle,
+    showCoordinates,
+    interactive,
+    whitePieces,
+    blackPieces,
+  } = useChessBoardState();
+  const { onSquareClick, onDragStart, onDrop, onDropOutside } = useChessBoardActions();
+  const {
+    showPlayerBadges = false,
+    topPlayer,
+    bottomPlayer,
+    topCapturedPieces = [],
+    bottomCapturedPieces = [],
+    topAdvantage = 0,
+    bottomAdvantage = 0,
+  } = players;
+  const { animatedMove, onAnimatedMoveEnd } = animation ?? {};
+
   const boardGridRef = useRef<HTMLDivElement | null>(null);
   const [ghostStyle, setGhostStyle] = useState<React.CSSProperties | null>(null);
 
@@ -161,18 +113,7 @@ export default function ChessBoard({
   const topPieces = orientation === "white" ? blackPieces : whitePieces;
   const bottomPieces = orientation === "white" ? whitePieces : blackPieces;
 
-  const handleOutsideDragStart =
-    (piece: string) => (e: React.DragEvent<HTMLDivElement>) => {
-      e.dataTransfer.setData("piece", piece);
-      e.dataTransfer.setData("fromSquare", "");
-      e.dataTransfer.setData("fromOutside", "true");
 
-      const dragElement = e.currentTarget as HTMLDivElement;
-      const rect = dragElement.getBoundingClientRect();
-      e.dataTransfer.setDragImage(dragElement, rect.width / 2, rect.height / 2);
-
-      onDragStart(piece, undefined, true);
-    };
   const handleBoardContainerDrop = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
 
@@ -192,70 +133,20 @@ export default function ChessBoard({
     }
   };
 
-  const renderOutsideTray = (pieces: string[], position: "top" | "bottom") => (
-    <div className={`outside-tray outside-tray-${position}`}>
-      <div className="outside-tray-inner">
-        {pieces.map((piece, index) => (
-          <div
-            key={`${position}-${piece}-${index}`}
-            className="outside-piece"
-            draggable={freeStyle}
-            onDragStart={handleOutsideDragStart(piece)}
-          >
-            <img src={pieceMap[piece]} alt={piece} className="piece" />
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-
-  const renderPlayerBadge = (
-    player: { name: string; avatarUrl?: string; isComputer?: boolean } | undefined,
-    position: "top" | "bottom",
-    capturedPieces: string[],
-    advantage: number
-  ) => {
-    if (!player) {
-      return null;
-    }
-
-    const initial = (player.name?.trim()?.charAt(0) || "P").toUpperCase();
-
-    return (
-      <div className={`board-player-badge board-player-badge-${position}`}>
-        <div className="board-player-avatar" aria-hidden="true">
-          {player.avatarUrl ? (
-            <img src={player.avatarUrl} alt={`${player.name} avatar`} />
-          ) : (
-            <span>{player.isComputer ? "PC" : initial}</span>
-          )}
-        </div>
-        <div className="board-player-meta">
-          <span className="board-player-name">{player.name}</span>
-          {(capturedPieces.length > 0 || advantage > 0) && (
-            <div className="board-captured-row">
-              <div className="board-captured-icons">
-                {capturedPieces.map((piece, index) => (
-                  <span key={`${position}-${piece}-${index}`} className="board-captured-piece" title={piece}>
-                    <img src={pieceMap[piece]} alt={piece} />
-                  </span>
-                ))}
-              </div>
-              {advantage > 0 && <span className="board-captured-advantage">+{advantage}</span>}
-            </div>
-          )}
-        </div>
-      </div>
-    );
-  };
-
   return (
     <div
       className="chess-board-wrapper"
       onDragOver={(e) => freeStyle && e.preventDefault()}
       onDrop={handleBoardContainerDrop}
     >
-      {freeStyle && renderOutsideTray(topPieces, "top")}
+      {freeStyle && (
+        <OutsideTray
+          pieces={topPieces}
+          position="top"
+          freeStyle={freeStyle}
+          onDragStart={onDragStart}
+        />
+      )}
 
       <div className={`chess-board-container${showPlayerBadges && !freeStyle ? " with-player-badges" : ""}`}>
         {showCoordinates && (
@@ -269,7 +160,14 @@ export default function ChessBoard({
         )}
 
         <div className={`board-and-files${!freeStyle ? " top bottom" : ""}`}>
-          {showPlayerBadges && renderPlayerBadge(topPlayer, "top", topCapturedPieces, topAdvantage)}
+          {showPlayerBadges && (
+            <BoardPlayerBadge
+              player={topPlayer}
+              position="top"
+              capturedPieces={topCapturedPieces}
+              advantage={topAdvantage}
+            />
+          )}
 
           <div ref={boardGridRef} className="chess-board-grid">
             {rows.map((row) =>
@@ -329,11 +227,25 @@ export default function ChessBoard({
             </div>
           )}
 
-          {showPlayerBadges && renderPlayerBadge(bottomPlayer, "bottom", bottomCapturedPieces, bottomAdvantage)}
+          {showPlayerBadges && (
+            <BoardPlayerBadge
+              player={bottomPlayer}
+              position="bottom"
+              capturedPieces={bottomCapturedPieces}
+              advantage={bottomAdvantage}
+            />
+          )}
         </div>
       </div>
 
-      {freeStyle && renderOutsideTray(bottomPieces, "bottom")}
+      {freeStyle && (
+        <OutsideTray
+          pieces={bottomPieces}
+          position="bottom"
+          freeStyle={freeStyle}
+          onDragStart={onDragStart}
+        />
+      )}
     </div>
   );
 }

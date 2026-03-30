@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { useEffect, useMemo, useReducer, useRef, useState, type CSSProperties } from "react";
 import { Chess as ChessJs } from "chess.js";
 import { ChessProps, BoardOrientation } from "./Chess.types";
 import ChessBoard from "./components/ChessBoard";
@@ -6,8 +6,19 @@ import Controls from "./components/Controls";
 import MoveList from "./components/MoveList";
 import GameStatus from "./components/GameStatus";
 import GameOptions, { GameMode, PieceColorPreset } from "./components/GameOptions";
+import SettingsModal from "./components/SettingsModal";
+import ResignConfirmModal from "./components/ResignConfirmModal";
+import GameOverModal from "./components/GameOverModal";
 import { PieceCode } from "./components/Piece";
 import useChessGame from "./hooks/useChessGame";
+import { ChessBoardProvider } from "./context/ChessContext";
+import { ChessPanelProvider } from "./context/ChessPanelContext";
+import {
+  ChessDisplayProvider,
+  chessDisplayReducer,
+  initialChessDisplayState,
+} from "./context/ChessDisplayContext";
+import { chessUiReducer, initialChessUiState } from "./context/chessUiReducer";
 import useAuth from "../../hooks/userAuth";
 import "./styles/chess.css";
 import "./styles/board.css";
@@ -17,7 +28,6 @@ import "./styles/status.css";
 import "./styles/fen.css";
 import "./styles/game-options.css";
 
-type SquarePatternPreset = "none" | "classic" | "soft" | "premium" | "three-d" | "strip";
 type PlayerBadge = {
   name: string;
   avatarUrl?: string;
@@ -39,36 +49,122 @@ type GameOverState = {
   locked: boolean;
 };
 
+type SuggestedMove = {
+  uci: string;
+  text: string;
+};
+
+type AnimatedEngineMove = {
+  from: string;
+  to: string;
+  piece: PieceCode;
+  token: number;
+};
+
+type ChessLocalState = {
+  showMovePopup: boolean;
+  nextMoveLoading: boolean;
+  nextMoveError: string | null;
+  showResignConfirm: boolean;
+  gameOverState: GameOverState | null;
+  gameOverModalPos: { x: number; y: number } | null;
+  suggestedMove: SuggestedMove | null;
+  animatedEngineMove: AnimatedEngineMove | null;
+};
+
+type ChessLocalAction =
+  | { type: "set-show-move-popup"; payload: boolean }
+  | { type: "set-next-move-loading"; payload: boolean }
+  | { type: "set-next-move-error"; payload: string | null }
+  | { type: "set-show-resign-confirm"; payload: boolean }
+  | { type: "set-game-over-state"; payload: GameOverState | null }
+  | { type: "set-game-over-state-if-unlocked"; payload: Omit<GameOverState, "open" | "locked"> }
+  | { type: "close-game-over-popup" }
+  | { type: "set-game-over-modal-pos"; payload: { x: number; y: number } | null }
+  | { type: "set-suggested-move"; payload: SuggestedMove | null }
+  | { type: "set-animated-engine-move"; payload: AnimatedEngineMove | null };
+
+const initialChessLocalState: ChessLocalState = {
+  showMovePopup: false,
+  nextMoveLoading: false,
+  nextMoveError: null,
+  showResignConfirm: false,
+  gameOverState: null,
+  gameOverModalPos: null,
+  suggestedMove: null,
+  animatedEngineMove: null,
+};
+
+const chessLocalReducer = (state: ChessLocalState, action: ChessLocalAction): ChessLocalState => {
+  switch (action.type) {
+    case "set-show-move-popup":
+      return { ...state, showMovePopup: action.payload };
+    case "set-next-move-loading":
+      return { ...state, nextMoveLoading: action.payload };
+    case "set-next-move-error":
+      return { ...state, nextMoveError: action.payload };
+    case "set-show-resign-confirm":
+      return { ...state, showResignConfirm: action.payload };
+    case "set-game-over-state":
+      return { ...state, gameOverState: action.payload };
+    case "set-game-over-state-if-unlocked":
+      if (state.gameOverState?.locked) {
+        return state;
+      }
+      return {
+        ...state,
+        gameOverState: {
+          ...action.payload,
+          open: true,
+          locked: true,
+        },
+      };
+    case "close-game-over-popup":
+      return {
+        ...state,
+        gameOverState: state.gameOverState ? { ...state.gameOverState, open: false } : state.gameOverState,
+      };
+    case "set-game-over-modal-pos":
+      return { ...state, gameOverModalPos: action.payload };
+    case "set-suggested-move":
+      return { ...state, suggestedMove: action.payload };
+    case "set-animated-engine-move":
+      return { ...state, animatedEngineMove: action.payload };
+    default:
+      return state;
+  }
+};
+
 export default function Chess({ initialFen = "start", orientation = "white", showCoordinates = true, showMoveList = true, allowUndo = true, allowReset = true, allowFlip = true, showGameOptions = true, interactive = true, onMove, onGameEnd, className = "", }: ChessProps) {
   const auth = useAuth() as any;
   const loggedInUser = auth?.user ?? null;
   const [currentOrientation, setCurrentOrientation] = useState<BoardOrientation>(orientation);
-  const [lightSquareColor, setLightSquareColor] = useState("#f0e6d2");
-  const [darkSquareColor, setDarkSquareColor] = useState("#b58863");
-  const [whitePieceColor, setWhitePieceColor] = useState<PieceColorPreset>("classic");
-  const [blackPieceColor, setBlackPieceColor] = useState<PieceColorPreset>("classic");
-  const [squarePattern, setSquarePattern] = useState<SquarePatternPreset>("none");
-  const [squarePatternOpacity, setSquarePatternOpacity] = useState(0.3);
-  const [showMovePopup, setShowMovePopup] = useState(false);
-  const [showSettingsPopup, setShowSettingsPopup] = useState(false);
-  const [gameMode, setGameMode] = useState<GameMode>("practice");
-  const [computerGameConfigured, setComputerGameConfigured] = useState(false);
-  const [playerColor, setPlayerColor] = useState<"white" | "black">("white");
-  const [computerLevel, setComputerLevel] = useState(1000);
-  const [nextMoveLoading, setNextMoveLoading] = useState(false);
-  const [nextMoveError, setNextMoveError] = useState<string | null>(null);
-  const [showResignConfirm, setShowResignConfirm] = useState(false);
-  const [gameOverState, setGameOverState] = useState<GameOverState | null>(null);
-  const [gameOverModalPos, setGameOverModalPos] = useState<{ x: number; y: number } | null>(null);
-  const [suggestedMove, setSuggestedMove] = useState<{ uci: string; text: string } | null>(null);
-  const [animatedEngineMove, setAnimatedEngineMove] = useState<{
-    from: string;
-    to: string;
-    piece: PieceCode;
-    token: number;
-  } | null>(null);
+  const [displayState, dispatchDisplay] = useReducer(chessDisplayReducer, initialChessDisplayState);
+  const [uiState, dispatchUi] = useReducer(chessUiReducer, initialChessUiState);
+  const [localState, dispatchLocal] = useReducer(chessLocalReducer, initialChessLocalState);
+  const {
+    showMovePopup,
+    nextMoveLoading,
+    nextMoveError,
+    showResignConfirm,
+    gameOverState,
+    gameOverModalPos,
+    suggestedMove,
+    animatedEngineMove,
+  } = localState;
   const game = useChessGame({ initialFen, orientation: currentOrientation, onMove, onGameEnd });
-  const gameOverModalRef = useRef<HTMLDivElement | null>(null);
+    const { gameMode, computerGameConfigured, playerColor, computerLevel } = uiState;
+    const {
+      lightSquareColor,
+      darkSquareColor,
+      whitePieceColor,
+      blackPieceColor,
+      squarePattern,
+      squarePatternOpacity,
+      showSettingsPopup,
+    } = displayState;
+
+  const gameOverModalRef = useRef<HTMLDivElement>(null);
   const computerMoveInFlightRef = useRef(false);
   const dragStateRef = useRef<{ dragging: boolean; offsetX: number; offsetY: number }>({
     dragging: false,
@@ -222,14 +318,52 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
     return undefined;
   }, [game.fen]);
 
+  const getApproximateSkillLevelFromElo = (elo: number) => {
+    const normalized = (elo - 1350) / (2850 - 1350);
+    return Math.max(0, Math.min(20, Math.round(normalized * 20)));
+  };
+
   const getEngineParamsByLevel = (level: number) => {
     const clampedLevel = Math.max(300, Math.min(3500, level));
-    const stepIndex = Math.floor((clampedLevel - 300) / 100);
 
+    if (clampedLevel < 1350) {
+      const normalized = (clampedLevel - 300) / (1350 - 300);
+      return {
+        movetime: Math.round(50 + normalized * 120),
+        depth: Math.max(1, Math.round(1 + normalized * 3)),
+        nodes: Math.round(300 + normalized * 2200),
+        skillLevel: 0,
+        useLimitStrength: true,
+        uciElo: 1350,
+      };
+    }
+
+    if (clampedLevel <= 2850) {
+      const normalized = (clampedLevel - 1350) / (2850 - 1350);
+      return {
+        movetime: Math.round(350 + normalized * 650),
+        skillLevel: getApproximateSkillLevelFromElo(clampedLevel),
+        useLimitStrength: true,
+        uciElo: clampedLevel,
+      };
+    }
+
+    const fullStrengthNormalized = (clampedLevel - 2850) / (3500 - 2850);
     return {
-      movetime: 400 + stepIndex * 180,
-      depth: 3 + Math.floor(stepIndex * 0.8),
+      movetime: Math.round(900 + fullStrengthNormalized * 500),
+      depth: 16 + Math.round(fullStrengthNormalized * 4),
+      useLimitStrength: false,
     };
+  };
+
+  const shouldUseWeakFallback = (level: number) => {
+    if (level >= 1350) {
+      return false;
+    }
+
+    const normalizedWeakness = (1350 - Math.max(300, level)) / (1350 - 300);
+    const fallbackChance = 0.2 + normalizedWeakness * 0.55;
+    return Math.random() < fallbackChance;
   };
 
   const getRandomLegalMove = (fen: string) => {
@@ -271,7 +405,7 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
   };
 
   const getBestMove = async (level?: number) => {
-    if (typeof level === "number" && level <= 300) {
+    if (typeof level === "number" && shouldUseWeakFallback(level)) {
       const randomMove = getFallbackLegalMove(game.fen) ?? getRandomLegalMove(game.fen);
       if (!randomMove) {
         throw new Error("No legal move found for this position.");
@@ -288,6 +422,10 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
         fen: game.fen,
         movetime: engineParams.movetime,
         depth: engineParams.depth,
+        nodes: engineParams.nodes,
+        skillLevel: engineParams.skillLevel,
+        useLimitStrength: engineParams.useLimitStrength,
+        uciElo: engineParams.uciElo,
       }),
     });
 
@@ -341,8 +479,8 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
   };
 
   useEffect(() => {
-    setSuggestedMove(null);
-    setNextMoveError(null);
+    dispatchLocal({ type: "set-suggested-move", payload: null });
+    dispatchLocal({ type: "set-next-move-error", payload: null });
   }, [game.fen]);
 
   useEffect(() => {
@@ -352,20 +490,15 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
 
     const timer = window.setTimeout(() => {
       if (isComputerMode) {
-        setComputerGameConfigured(false);
+        dispatchUi({ type: "set-computer-configured", payload: false });
       }
-      setGameOverState((prev) => {
-        if (prev?.locked) {
-          return prev;
-        }
-
-        const winner = game.turn === "white" ? "black" : "white";
-        return {
+      const winner = game.turn === "white" ? "black" : "white";
+      dispatchLocal({
+        type: "set-game-over-state-if-unlocked",
+        payload: {
           winner,
           reason: "checkmate",
-          open: true,
-          locked: true,
-        };
+        },
       });
     }, 1800);
 
@@ -378,7 +511,7 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
     if (!gameOverState?.open) {
       return;
     }
-    setGameOverModalPos(null);
+    dispatchLocal({ type: "set-game-over-modal-pos", payload: null });
   }, [gameOverState?.open]);
 
   useEffect(() => {
@@ -393,7 +526,7 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
       const nextX = Math.min(Math.max(0, event.clientX - dragStateRef.current.offsetX), maxX);
       const nextY = Math.min(Math.max(0, event.clientY - dragStateRef.current.offsetY), maxY);
 
-      setGameOverModalPos({ x: nextX, y: nextY });
+      dispatchLocal({ type: "set-game-over-modal-pos", payload: { x: nextX, y: nextY } });
     };
 
     const onMouseUp = () => {
@@ -428,8 +561,8 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
       }
 
       computerMoveInFlightRef.current = true;
-      setNextMoveLoading(true);
-      setNextMoveError(null);
+      dispatchLocal({ type: "set-next-move-loading", payload: true });
+      dispatchLocal({ type: "set-next-move-error", payload: null });
 
       try {
         const bestMove = await getBestMove(computerLevel);
@@ -442,19 +575,25 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
         const movingPiece = game.board[fromRow]?.[fromCol] as PieceCode | undefined;
 
         if (movingPiece) {
-          setAnimatedEngineMove({ from, to, piece: movingPiece, token: Date.now() });
+          dispatchLocal({
+            type: "set-animated-engine-move",
+            payload: { from, to, piece: movingPiece, token: Date.now() },
+          });
         }
 
         const ok = game.applySuggestedMove(bestMove.uci);
         if (!ok) {
-          setAnimatedEngineMove(null);
+          dispatchLocal({ type: "set-animated-engine-move", payload: null });
           return;
         }
       } catch (err) {
-        setNextMoveError(err instanceof Error ? err.message : "Failed to calculate next move.");
+        dispatchLocal({
+          type: "set-next-move-error",
+          payload: err instanceof Error ? err.message : "Failed to calculate next move.",
+        });
       } finally {
         computerMoveInFlightRef.current = false;
-        setNextMoveLoading(false);
+        dispatchLocal({ type: "set-next-move-loading", payload: false });
       }
     };
 
@@ -465,37 +604,37 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
   }, [canUserMove, computerLevel, game.board, game.fen, game.status, isComputerMode, isComputerSetupRequired, isUiLocked]);
 
   const unlockGameActions = () => {
-    setGameOverState(null);
+    dispatchLocal({ type: "set-game-over-state", payload: null });
   };
 
   const handleGameModeChange = (mode: GameMode) => {
-    setShowResignConfirm(false);
+    dispatchLocal({ type: "set-show-resign-confirm", payload: false });
     unlockGameActions();
-    setGameMode(mode);
+    dispatchUi({ type: "set-game-mode", payload: mode });
     if (mode !== "vs-computer") {
-      setComputerGameConfigured(false);
+      dispatchUi({ type: "set-computer-configured", payload: false });
     }
     game.setFreeStyleMode(mode === "practice");
     if (mode === "vs-computer") {
-      setComputerGameConfigured(false);
+      dispatchUi({ type: "set-computer-configured", payload: false });
       game.reset();
       setCurrentOrientation(playerColor);
     }
-    setSuggestedMove(null);
-    setNextMoveError(null);
+    dispatchLocal({ type: "set-suggested-move", payload: null });
+    dispatchLocal({ type: "set-next-move-error", payload: null });
   };
 
   const handleStartComputerGame = (color: "white" | "black") => {
-    setShowResignConfirm(false);
+    dispatchLocal({ type: "set-show-resign-confirm", payload: false });
     unlockGameActions();
-    setGameMode("vs-computer");
-    setComputerGameConfigured(true);
-    setPlayerColor(color);
+    dispatchUi({ type: "set-game-mode", payload: "vs-computer" });
+    dispatchUi({ type: "set-computer-configured", payload: true });
+    dispatchUi({ type: "set-player-color", payload: color });
     setCurrentOrientation(color);
     game.setFreeStyleMode(false);
     game.reset();
-    setSuggestedMove(null);
-    setNextMoveError(null);
+    dispatchLocal({ type: "set-suggested-move", payload: null });
+    dispatchLocal({ type: "set-next-move-error", payload: null });
   };
 
   const handleComputerLevelChange = (level: number) => {
@@ -503,7 +642,7 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
       return;
     }
     const normalizedLevel = Math.max(300, Math.min(3500, Math.round(level / 100) * 100));
-    setComputerLevel(normalizedLevel);
+    dispatchUi({ type: "set-computer-level", payload: normalizedLevel });
   };
 
   const nextMoveDisabledReason = useMemo(() => {
@@ -521,17 +660,20 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
       return;
     }
 
-    setNextMoveLoading(true);
-    setNextMoveError(null);
+    dispatchLocal({ type: "set-next-move-loading", payload: true });
+    dispatchLocal({ type: "set-next-move-error", payload: null });
 
     try {
       const bestMove = await getBestMove();
-      setSuggestedMove(bestMove);
+      dispatchLocal({ type: "set-suggested-move", payload: bestMove });
     } catch (err) {
-      setSuggestedMove(null);
-      setNextMoveError(err instanceof Error ? err.message : "Failed to calculate next move.");
+      dispatchLocal({ type: "set-suggested-move", payload: null });
+      dispatchLocal({
+        type: "set-next-move-error",
+        payload: err instanceof Error ? err.message : "Failed to calculate next move.",
+      });
     } finally {
-      setNextMoveLoading(false);
+      dispatchLocal({ type: "set-next-move-loading", payload: false });
     }
   };
 
@@ -542,7 +684,7 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
 
     const uci = suggestedMove.uci.trim().toLowerCase();
     if (!/^[a-h][1-8][a-h][1-8][qrbn]?$/.test(uci)) {
-      setNextMoveError("Suggested move format is invalid.");
+      dispatchLocal({ type: "set-next-move-error", payload: "Suggested move format is invalid." });
       return;
     }
 
@@ -553,17 +695,20 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
     const movingPiece = game.board[fromRow]?.[fromCol] as PieceCode | undefined;
 
     if (movingPiece) {
-      setAnimatedEngineMove({ from, to, piece: movingPiece, token: Date.now() });
+      dispatchLocal({
+        type: "set-animated-engine-move",
+        payload: { from, to, piece: movingPiece, token: Date.now() },
+      });
     }
 
     const ok = game.applySuggestedMove(suggestedMove.uci);
     if (!ok) {
-      setAnimatedEngineMove(null);
+      dispatchLocal({ type: "set-animated-engine-move", payload: null });
       return;
     }
 
-    setSuggestedMove(null);
-    setNextMoveError(null);
+    dispatchLocal({ type: "set-suggested-move", payload: null });
+    dispatchLocal({ type: "set-next-move-error", payload: null });
   };
 
   const handleResign = () => {
@@ -576,27 +721,30 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
       return;
     }
 
-    setShowResignConfirm(true);
+    dispatchLocal({ type: "set-show-resign-confirm", payload: true });
   };
 
   const confirmResign = () => {
-    setShowResignConfirm(false);
+    dispatchLocal({ type: "set-show-resign-confirm", payload: false });
 
     if (isComputerMode) {
-      setComputerGameConfigured(false);
+      dispatchUi({ type: "set-computer-configured", payload: false });
     }
 
     const winner = game.turn === "white" ? "black" : "white";
-    setGameOverState({
-      winner,
-      reason: "resign",
-      open: true,
-      locked: true,
+    dispatchLocal({
+      type: "set-game-over-state",
+      payload: {
+        winner,
+        reason: "resign",
+        open: true,
+        locked: true,
+      },
     });
   };
 
   const cancelResign = () => {
-    setShowResignConfirm(false);
+    dispatchLocal({ type: "set-show-resign-confirm", payload: false });
   };
 
   const handleRematch = () => {
@@ -604,7 +752,7 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
     game.setFreeStyleMode(false);
     game.reset();
     if (isComputerMode) {
-      setComputerGameConfigured(true);
+      dispatchUi({ type: "set-computer-configured", payload: true });
       setCurrentOrientation(playerColor);
     }
   };
@@ -628,7 +776,7 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
   };
 
   const closeGameOverPopup = () => {
-    setGameOverState((prev) => (prev ? { ...prev, open: false } : prev));
+    dispatchLocal({ type: "close-game-over-popup" });
   };
 
   const handleGameOverDragStart = (event: React.MouseEvent<HTMLDivElement>) => {
@@ -642,7 +790,7 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
     dragStateRef.current.offsetY = event.clientY - rect.top;
 
     if (!gameOverModalPos) {
-      setGameOverModalPos({ x: rect.left, y: rect.top });
+      dispatchLocal({ type: "set-game-over-modal-pos", payload: { x: rect.left, y: rect.top } });
     }
   };
 
@@ -689,72 +837,102 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
   return (
     <div className={["chess-wrapper", `white-piece-${whitePieceColor}`, `black-piece-${blackPieceColor}`, `board-pattern-${squarePattern}`, className].join(" ")} style={boardStyle}>
       <GameStatus status={game.status} turn={game.turn} />
+      <ChessDisplayProvider
+        state={displayState}
+        actions={{
+          setLightSquareColor: (value) => dispatchDisplay({ type: "set-light-square-color", payload: value }),
+          setDarkSquareColor: (value) => dispatchDisplay({ type: "set-dark-square-color", payload: value }),
+          setWhitePieceColor: (value) => dispatchDisplay({ type: "set-white-piece-color", payload: value }),
+          setBlackPieceColor: (value) => dispatchDisplay({ type: "set-black-piece-color", payload: value }),
+          setSquarePattern: (value) => dispatchDisplay({ type: "set-square-pattern", payload: value }),
+          setSquarePatternOpacity: (value) => dispatchDisplay({ type: "set-square-pattern-opacity", payload: value }),
+          openSettingsPopup: () => dispatchDisplay({ type: "open-settings" }),
+          closeSettingsPopup: () => dispatchDisplay({ type: "close-settings" }),
+        }}
+      >
       <div className="chess-main-content">
-        <ChessBoard
-          board={game.board}
-          orientation={currentOrientation}
-          freeStyle={game.freeStyle}
-          showPlayerBadges={!isPracticeMode}
-          topPlayer={topPlayer}
-          bottomPlayer={bottomPlayer}
-          topCapturedPieces={topPlayer.color === "white" ? capturedSummary.byWhite : capturedSummary.byBlack}
-          bottomCapturedPieces={bottomPlayer.color === "white" ? capturedSummary.byWhite : capturedSummary.byBlack}
-          topAdvantage={topPlayer.color === "white" ? capturedSummary.whiteAdvantage : capturedSummary.blackAdvantage}
-          bottomAdvantage={bottomPlayer.color === "white" ? capturedSummary.whiteAdvantage : capturedSummary.blackAdvantage}
-          checkedKingSquare={checkedKingSquare}
-          selectedSquare={game.selectedSquare}
-          validMoves={game.validMoves}
-          lastMove={game.lastMove}
-          onSquareClick={handleSquareClick}
-          showCoordinates={showCoordinates}
-          interactive={interactive && !isOnlineMode}
-          whitePieces={game.whitePieces}
-          blackPieces={game.blackPieces}
-          onDragStart={handleDragStart}
-          onDrop={handleDrop}
-          onDropOutside={handleDropOutside}
-          animatedMove={animatedEngineMove ?? undefined}
-          onAnimatedMoveEnd={() => setAnimatedEngineMove(null)}
-        />
-        <div className="chess-side-panel">
-          {showGameOptions && (
-            <GameOptions
-              gameMode={gameMode}
-              computerLevel={computerLevel}
-              computerLevelLocked={computerLevelLocked}
-              computerGameConfigured={computerGameConfigured}
-              computerSetupRequired={isComputerSetupRequired}
-              turn={game.turn}
-              castlingRights={game.castlingRights}
-              onGameModeChange={handleGameModeChange}
-              onStartComputerGame={handleStartComputerGame}
-              onComputerLevelChange={handleComputerLevelChange}
-              onTurnChange={game.setTurn}
-              onCastlingChange={game.setCastlingRights}
-            />
-          )}
-          <Controls
-            onUndo={game.undo}
-            onReset={handleResign}
-            onFlip={handleFlip}
-            onClearAll={game.clearAllPieces}
-            onNextMove={isPracticeMode ? requestNextMove : undefined}
-            freeStyle={game.freeStyle}
-            allowUndo={allowUndo}
-            allowReset={allowReset}
-            allowFlip={allowFlip}
-            allowClearAll={showGameOptions && isPracticeMode}
-            nextMoveLoading={nextMoveLoading && isPracticeMode}
-            nextMoveDisabled={!isPracticeMode || !game.freeStyleValidation.isValid || nextMoveLoading}
-            nextMoveDisabledReason={nextMoveDisabledReason}
-            suggestedMoveText={suggestedMove?.text}
-            onApplySuggestedMove={isPracticeMode && suggestedMove ? applySuggestedMove : undefined}
-            nextMoveError={nextMoveError ?? undefined}
-            moveCount={game.moveHistory.length}
-            onOpenMoves={showMoveList ? () => setShowMovePopup(true) : undefined}
-            onOpenSettings={() => setShowSettingsPopup(true)}
+        <ChessBoardProvider
+          state={{
+            board: game.board,
+            selectedSquare: game.selectedSquare,
+            validMoves: game.validMoves,
+            lastMove: game.lastMove,
+            checkedKingSquare,
+            orientation: currentOrientation,
+            freeStyle: game.freeStyle,
+            showCoordinates,
+            interactive: interactive && !isOnlineMode,
+            whitePieces: game.whitePieces,
+            blackPieces: game.blackPieces,
+          }}
+          actions={{
+            onSquareClick: handleSquareClick,
+            onDragStart: handleDragStart,
+            onDrop: handleDrop,
+            onDropOutside: handleDropOutside,
+          }}
+        >
+          <ChessBoard
+            players={{
+              showPlayerBadges: !isPracticeMode,
+              topPlayer,
+              bottomPlayer,
+              topCapturedPieces: topPlayer.color === "white" ? capturedSummary.byWhite : capturedSummary.byBlack,
+              bottomCapturedPieces: bottomPlayer.color === "white" ? capturedSummary.byWhite : capturedSummary.byBlack,
+              topAdvantage: topPlayer.color === "white" ? capturedSummary.whiteAdvantage : capturedSummary.blackAdvantage,
+              bottomAdvantage: bottomPlayer.color === "white" ? capturedSummary.whiteAdvantage : capturedSummary.blackAdvantage,
+            }}
+            animation={{
+              animatedMove: animatedEngineMove ?? undefined,
+              onAnimatedMoveEnd: () => dispatchLocal({ type: "set-animated-engine-move", payload: null }),
+            }}
           />
-        </div>
+        </ChessBoardProvider>
+        <ChessPanelProvider
+          state={{
+            gameMode,
+            computerLevel,
+            computerLevelLocked,
+            computerGameConfigured,
+            computerSetupRequired: isComputerSetupRequired,
+            turn: game.turn,
+            castlingRights: game.castlingRights,
+            freeStyle: game.freeStyle,
+            allowUndo,
+            allowReset,
+            allowFlip,
+            allowClearAll: showGameOptions && isPracticeMode,
+            nextMoveLoading: nextMoveLoading && isPracticeMode,
+            nextMoveDisabled: !isPracticeMode || !game.freeStyleValidation.isValid || nextMoveLoading,
+            nextMoveDisabledReason,
+            suggestedMoveText: suggestedMove?.text,
+            nextMoveError: nextMoveError ?? undefined,
+            moveCount: game.moveHistory.length,
+            showMoveList,
+            canRequestNextMove: isPracticeMode,
+            canApplySuggestedMove: isPracticeMode && Boolean(suggestedMove),
+          }}
+          actions={{
+            onGameModeChange: handleGameModeChange,
+            onStartComputerGame: handleStartComputerGame,
+            onComputerLevelChange: handleComputerLevelChange,
+            onTurnChange: game.setTurn,
+            onCastlingChange: game.setCastlingRights,
+            onUndo: game.undo,
+            onReset: handleResign,
+            onFlip: handleFlip,
+            onClearAll: game.clearAllPieces,
+            onNextMove: requestNextMove,
+            onApplySuggestedMove: applySuggestedMove,
+            onOpenMoves: () => dispatchLocal({ type: "set-show-move-popup", payload: true }),
+            onOpenSettings: () => dispatchDisplay({ type: "open-settings" }),
+          }}
+        >
+          <div className="chess-side-panel">
+            {showGameOptions && <GameOptions />}
+            <Controls />
+          </div>
+        </ChessPanelProvider>
       </div>
       <div className="fen-display-container">
         <div className="fen-content">
@@ -773,152 +951,32 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
         <MoveList
           moves={game.moveHistory}
           isOpen={showMovePopup}
-          onClose={() => setShowMovePopup(false)}
+          onClose={() => dispatchLocal({ type: "set-show-move-popup", payload: false })}
         />
       )}
 
-      {showSettingsPopup && (
-        <div className="move-popup-backdrop" onClick={() => setShowSettingsPopup(false)}>
-          <div className="move-popup settings-popup" onClick={(e) => e.stopPropagation()}>
-            <div className="move-popup-header">
-              <strong>Settings</strong>
-            </div>
-            <div className="settings-popup-body">
-              <div className="option-section">
-                <h4>Board Colors</h4>
-                <div className="color-grid">
-                  <label className="color-control">
-                    <span>Light</span>
-                    <input
-                      type="color"
-                      value={lightSquareColor}
-                      onChange={(e) => setLightSquareColor(e.target.value)}
-                      aria-label="Light square color"
-                    />
-                  </label>
-                  <label className="color-control">
-                    <span>Dark</span>
-                    <input
-                      type="color"
-                      value={darkSquareColor}
-                      onChange={(e) => setDarkSquareColor(e.target.value)}
-                      aria-label="Dark square color"
-                    />
-                  </label>
-                </div>
-              </div>
-              <div className="option-section">
-                <h4>Piece Colors</h4>
-                <div className="piece-color-selectors">
-                  <label className="piece-color-control">
-                    <span>White</span>
-                    <select value={whitePieceColor} onChange={(e) => setWhitePieceColor(e.target.value as PieceColorPreset)}>
-                      <option value="classic">Classic</option>
-                      <option value="sapphire">Sapphire</option>
-                      <option value="emerald">Emerald</option>
-                      <option value="ruby">Ruby</option>
-                      <option value="gold">Gold</option>
-                    </select>
-                  </label>
-                  <label className="piece-color-control">
-                    <span>Black</span>
-                    <select value={blackPieceColor} onChange={(e) => setBlackPieceColor(e.target.value as PieceColorPreset)}>
-                      <option value="classic">Classic</option>
-                      <option value="sapphire">Sapphire</option>
-                      <option value="emerald">Emerald</option>
-                      <option value="ruby">Ruby</option>
-                      <option value="gold">Gold</option>
-                    </select>
-                  </label>
-                </div>
-              </div>
-              <div className="option-section">
-                <h4>Square Pattern</h4>
-                <div className="piece-color-selectors">
-                  <label className="piece-color-control">
-                    <span>Preset</span>
-                    <select
-                      value={squarePattern}
-                      onChange={(e) => setSquarePattern(e.target.value as SquarePatternPreset)}
-                    >
-                      <option value="none">None</option>
-                      <option value="classic">Classic Chess Board</option>
-                      <option value="soft">Soft Grid</option>
-                      <option value="premium">Premium Gold</option>
-                      <option value="three-d">3D Tiles</option>
-                      <option value="strip">Title Strip</option>
-                    </select>
-                  </label>
-                  <label className="pattern-opacity-control">
-                    <span>Opacity</span>
-                    <input
-                      type="range"
-                      min="0"
-                      max="0.8"
-                      step="0.05"
-                      value={squarePatternOpacity}
-                      onChange={(e) => setSquarePatternOpacity(Number(e.target.value))}
-                      aria-label="Square pattern opacity"
-                    />
-                    <output>{Math.round(squarePatternOpacity * 100)}%</output>
-                  </label>
-                  <div className="square-pattern-preview-wrap">
-                    <div className="square-pattern-preview light" />
-                    <div className="square-pattern-preview dark" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      <SettingsModal />
 
-      {showResignConfirm && (
-        <div className="game-over-backdrop" onClick={(e) => e.stopPropagation()}>
-          <div className="game-over-modal resign-confirm-modal" role="dialog" aria-modal="true" aria-label="Confirm resign">
-            <h3 className="game-over-title">Confirm Resign</h3>
-            <p className="game-over-subtitle">Are you sure you want to resign this game?</p>
-            <div className="game-over-actions">
-              <button className="control-btn" onClick={confirmResign}>Yes, Resign</button>
-              <button className="control-btn" onClick={cancelResign}>No, Continue</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <ResignConfirmModal
+        open={showResignConfirm}
+        onConfirm={confirmResign}
+        onCancel={cancelResign}
+      />
 
-      {gameOverState?.open && (
-        <div className="game-over-backdrop" onClick={(e) => e.stopPropagation()}>
-          <div
-            ref={gameOverModalRef}
-            className="game-over-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-label="Game over"
-            style={gameOverModalPos ? { position: "fixed", left: gameOverModalPos.x, top: gameOverModalPos.y } : undefined}
-          >
-            <div className="game-over-drag-handle" onMouseDown={handleGameOverDragStart} title="Drag popup" />
-            <button className="game-over-close" onClick={closeGameOverPopup} aria-label="Close game over popup">x</button>
-            <h3 className="game-over-title">{gameOverState.winner === "white" ? "White Won" : "Black Won"}</h3>
-            <p className="game-over-subtitle">{gameOverState.reason === "checkmate" ? "by checkmate" : "by resign"}</p>
-
-            <div className="game-over-result-list">
-              <div className="game-over-result-row win">
-                <span className="name">{winnerPlayer.name}</span>
-                <span className="tag">WIN</span>
-              </div>
-              <div className="game-over-result-row lose">
-                <span className="name">{loserPlayer.name}</span>
-                <span className="tag">LOSE</span>
-              </div>
-            </div>
-
-            <div className="game-over-actions">
-              <button className="control-btn" onClick={handleRematch}>Rematch</button>
-              <button className="control-btn" onClick={handleSwitchSide}>Switch Side</button>
-            </div>
-          </div>
-        </div>
-      )}
+      <GameOverModal
+        open={Boolean(gameOverState?.open)}
+        winner={gameOverState?.winner ?? "white"}
+        reason={gameOverState?.reason ?? "checkmate"}
+        winnerName={winnerPlayer?.name ?? "Winner"}
+        loserName={loserPlayer?.name ?? "Loser"}
+        modalRef={gameOverModalRef}
+        modalPos={gameOverModalPos}
+        onDragStart={handleGameOverDragStart}
+        onClose={closeGameOverPopup}
+        onRematch={handleRematch}
+        onSwitchSide={handleSwitchSide}
+      />
+      </ChessDisplayProvider>
     </div>
   );
 }

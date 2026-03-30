@@ -43,7 +43,15 @@ const parseStockfishInfoLine = (line) => {
   };
 };
 
-const getBestMoveFromStockfish = ({ fen, movetime = 2000, depth }) => {
+const getBestMoveFromStockfish = ({
+  fen,
+  movetime = 2000,
+  depth,
+  nodes,
+  skillLevel,
+  useLimitStrength,
+  uciElo,
+}) => {
   return new Promise((resolve, reject) => {
     const { enginePath, configuredPath } = resolveStockfishPath();
     const engine = spawn(enginePath, []);
@@ -106,6 +114,15 @@ const getBestMoveFromStockfish = ({ fen, movetime = 2000, depth }) => {
 
       for (const line of lines) {
         if (line === "uciok") {
+          if (typeof useLimitStrength === "boolean") {
+            engine.stdin.write(`setoption name UCI_LimitStrength value ${useLimitStrength ? "true" : "false"}\n`);
+          }
+          if (typeof uciElo === "number") {
+            engine.stdin.write(`setoption name UCI_Elo value ${uciElo}\n`);
+          }
+          if (typeof skillLevel === "number") {
+            engine.stdin.write(`setoption name Skill Level value ${skillLevel}\n`);
+          }
           engine.stdin.write("isready\n");
           continue;
         }
@@ -113,11 +130,17 @@ const getBestMoveFromStockfish = ({ fen, movetime = 2000, depth }) => {
         if (line === "readyok" && !readyForSearch) {
           readyForSearch = true;
           engine.stdin.write(`position fen ${fen}\n`);
-          if (typeof depth === "number") {
-            engine.stdin.write(`go depth ${depth}\n`);
-          } else {
-            engine.stdin.write(`go movetime ${movetime}\n`);
+          const goParts = [];
+          if (typeof movetime === "number") {
+            goParts.push(`movetime ${movetime}`);
           }
+          if (typeof depth === "number") {
+            goParts.push(`depth ${depth}`);
+          }
+          if (typeof nodes === "number") {
+            goParts.push(`nodes ${nodes}`);
+          }
+          engine.stdin.write(`go ${goParts.length ? goParts.join(" ") : `movetime ${movetime}`}\n`);
           continue;
         }
 
@@ -157,7 +180,7 @@ const getBestMoveFromStockfish = ({ fen, movetime = 2000, depth }) => {
 
 export const getNextMove = async (req, res) => {
   try {
-    const { fen, movetime, depth } = req.body ?? {};
+    const { fen, movetime, depth, nodes, skillLevel, useLimitStrength, uciElo } = req.body ?? {};
 
     if (typeof fen !== "string" || !fen.trim()) {
       return res.status(400).json({ error: "fen is required." });
@@ -174,10 +197,30 @@ export const getNextMove = async (req, res) => {
       ? Math.max(1, Math.min(40, Number(depth)))
       : undefined;
 
+    const parsedNodes = Number.isFinite(Number(nodes))
+      ? Math.max(100, Math.min(50000, Number(nodes)))
+      : undefined;
+
+    const parsedSkillLevel = Number.isFinite(Number(skillLevel))
+      ? Math.max(0, Math.min(20, Number(skillLevel)))
+      : undefined;
+
+    const parsedUseLimitStrength = typeof useLimitStrength === "boolean"
+      ? useLimitStrength
+      : undefined;
+
+    const parsedUciElo = Number.isFinite(Number(uciElo))
+      ? Math.max(1320, Math.min(3190, Number(uciElo)))
+      : undefined;
+
     const result = await getBestMoveFromStockfish({
       fen: fen.trim(),
       movetime: parsedMoveTime,
       depth: parsedDepth,
+      nodes: parsedNodes,
+      skillLevel: parsedSkillLevel,
+      useLimitStrength: parsedUseLimitStrength,
+      uciElo: parsedUciElo,
     });
 
     const from = result.bestMoveUci.slice(0, 2);
