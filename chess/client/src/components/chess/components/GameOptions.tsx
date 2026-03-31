@@ -27,6 +27,11 @@ export default function GameOptions() {
   const isPractice = gameMode === "practice";
   const ratingOptions = Array.from({ length: 33 }, (_, i) => 300 + i * 100);
 
+  const handleQuickStartComputer = () => {
+    const randomColor: "white" | "black" = Math.random() < 0.5 ? "white" : "black";
+    onStartComputerGame(randomColor);
+  };
+
   const handleCastlingChange = (key: keyof typeof castlingRights, checked: boolean) => {
     onCastlingChange({
       ...castlingRights,
@@ -38,47 +43,35 @@ export default function GameOptions() {
     <div className="game-options">
       <div className="option-section">
         <h4>Play</h4>
-        <div className="mode-radios">
-          <label>
-            <input
-              type="radio"
-              name="play-mode"
-              value="vs-computer"
-              checked={gameMode === "vs-computer"}
-              onChange={() => onGameModeChange("vs-computer")}
-            />
-            Play Against Computer
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="play-mode"
-              value="vs-player"
-              checked={gameMode === "vs-player"}
-              onChange={() => onGameModeChange("vs-player")}
-            />
-            Player vs Other Player
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="play-mode"
-              value="practice"
-              checked={gameMode === "practice"}
-              onChange={() => onGameModeChange("practice")}
-            />
+        <div className="play-mode-buttons" role="group" aria-label="Play mode">
+          <button
+            type="button"
+            className={`play-mode-btn${gameMode === "vs-computer" ? " is-active" : ""}`}
+            onClick={handleQuickStartComputer}
+          >
+            VS Computer
+          </button>
+          <button
+            type="button"
+            className={`play-mode-btn${gameMode === "vs-player" ? " is-active" : ""}`}
+            onClick={() => onGameModeChange("vs-player")}
+          >
+            VS Player
+          </button>
+          <button
+            type="button"
+            className={`play-mode-btn${gameMode === "practice" ? " is-active" : ""}`}
+            onClick={() => onGameModeChange("practice")}
+          >
             Practice
-          </label>
-          <label>
-            <input
-              type="radio"
-              name="play-mode"
-              value="online"
-              checked={gameMode === "online"}
-              onChange={() => onGameModeChange("online")}
-            />
-            Play Online
-          </label>
+          </button>
+          <button
+            type="button"
+            className={`play-mode-btn${gameMode === "online" ? " is-active" : ""}`}
+            onClick={() => onGameModeChange("online")}
+          >
+            Online
+          </button>
         </div>
       </div>
 

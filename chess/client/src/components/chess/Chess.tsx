@@ -135,7 +135,7 @@ const chessLocalReducer = (state: ChessLocalState, action: ChessLocalAction): Ch
   }
 };
 
-export default function Chess({ initialFen = "start", orientation = "white", showCoordinates = true, showMoveList = true, allowUndo = true, allowReset = true, allowFlip = true, showGameOptions = true, interactive = true, onMove, onGameEnd, className = "", }: ChessProps) {
+export default function Chess({ initialFen = "start", orientation = "white", showCoordinates = true, showMoveList = true, allowUndo = true, allowReset = true, allowFlip = true, showGameOptions = true, externalGameMode, boardZoom = 1, onBoardZoomChange, appearanceSettings, interactive = true, onMove, onGameEnd, className = "", }: ChessProps) {
   const auth = useAuth() as any;
   const loggedInUser = auth?.user ?? null;
   const [currentOrientation, setCurrentOrientation] = useState<BoardOrientation>(orientation);
@@ -177,10 +177,23 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
   };
 
   const boardStyle = {
-    "--square-light": lightSquareColor,
-    "--square-dark": darkSquareColor,
+    "--square-light": appearanceSettings?.lightSquareColor ?? lightSquareColor,
+    "--square-dark": appearanceSettings?.darkSquareColor ?? darkSquareColor,
     "--square-pattern-opacity": String(squarePatternOpacity),
+    "--tile-size": `${Math.round(50 * Math.max(0.6, Math.min(1.8, boardZoom)))}px`,
   } as CSSProperties;
+
+  const clampedBoardZoom = Math.max(0.7, Math.min(1.6, boardZoom));
+  const canZoomOut = clampedBoardZoom > 0.7;
+  const canZoomIn = clampedBoardZoom < 1.6;
+
+  const updateBoardZoom = (delta: number) => {
+    if (!onBoardZoomChange) {
+      return;
+    }
+    const nextZoom = Number((clampedBoardZoom + delta).toFixed(2));
+    onBoardZoomChange(Math.max(0.7, Math.min(1.6, nextZoom)));
+  };
 
   const isPracticeMode = gameMode === "practice";
   const isComputerMode = gameMode === "vs-computer";
@@ -645,6 +658,19 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
     dispatchUi({ type: "set-computer-level", payload: normalizedLevel });
   };
 
+  useEffect(() => {
+    if (!externalGameMode) {
+      return;
+    }
+
+    if (externalGameMode === "vs-computer") {
+      handleStartComputerGame("white");
+      return;
+    }
+
+    handleGameModeChange(externalGameMode);
+  }, [externalGameMode]);
+
   const nextMoveDisabledReason = useMemo(() => {
     if (!isPracticeMode) {
       return "Next Move is available in Practice mode.";
@@ -835,22 +861,23 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
   };
 
   return (
-    <div className={["chess-wrapper", `white-piece-${whitePieceColor}`, `black-piece-${blackPieceColor}`, `board-pattern-${squarePattern}`, className].join(" ")} style={boardStyle}>
-      <GameStatus status={game.status} turn={game.turn} />
-      <ChessDisplayProvider
-        state={displayState}
-        actions={{
-          setLightSquareColor: (value) => dispatchDisplay({ type: "set-light-square-color", payload: value }),
-          setDarkSquareColor: (value) => dispatchDisplay({ type: "set-dark-square-color", payload: value }),
-          setWhitePieceColor: (value) => dispatchDisplay({ type: "set-white-piece-color", payload: value }),
-          setBlackPieceColor: (value) => dispatchDisplay({ type: "set-black-piece-color", payload: value }),
-          setSquarePattern: (value) => dispatchDisplay({ type: "set-square-pattern", payload: value }),
-          setSquarePatternOpacity: (value) => dispatchDisplay({ type: "set-square-pattern-opacity", payload: value }),
-          openSettingsPopup: () => dispatchDisplay({ type: "open-settings" }),
-          closeSettingsPopup: () => dispatchDisplay({ type: "close-settings" }),
-        }}
-      >
-      <div className="chess-main-content">
+    <>
+      <div className="chess-main-stack">
+        <GameStatus status={game.status} turn={game.turn} />
+        <ChessDisplayProvider
+          state={displayState}
+          actions={{
+            setLightSquareColor: (value) => dispatchDisplay({ type: "set-light-square-color", payload: value }),
+            setDarkSquareColor: (value) => dispatchDisplay({ type: "set-dark-square-color", payload: value }),
+            setWhitePieceColor: (value) => dispatchDisplay({ type: "set-white-piece-color", payload: value }),
+            setBlackPieceColor: (value) => dispatchDisplay({ type: "set-black-piece-color", payload: value }),
+            setSquarePattern: (value) => dispatchDisplay({ type: "set-square-pattern", payload: value }),
+            setSquarePatternOpacity: (value) => dispatchDisplay({ type: "set-square-pattern-opacity", payload: value }),
+            openSettingsPopup: () => dispatchDisplay({ type: "open-settings" }),
+            closeSettingsPopup: () => dispatchDisplay({ type: "close-settings" }),
+          }}
+        >
+        <div className={["chess-main-content", className].join(" ")} style={boardStyle}>
         <ChessBoardProvider
           state={{
             board: game.board,
@@ -933,50 +960,80 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
             <Controls />
           </div>
         </ChessPanelProvider>
-      </div>
-      <div className="fen-display-container">
-        <div className="fen-content">
-          <input type="text" value={game.fen} readOnly className="fen-input" />
-          <button 
-            className="copy-btn" 
-            onClick={() => navigator.clipboard.writeText(game.fen)}
-            title="Copy FEN to clipboard"
-          >
-            📋
-          </button>
         </div>
-      </div>
+        <div className="chess-bottom-dock">
+          <div className="board-zoom-controls" aria-label="Board zoom controls">
+            <button
+              type="button"
+              className="board-zoom-btn"
+              onClick={() => updateBoardZoom(-0.1)}
+              disabled={!onBoardZoomChange || !canZoomOut}
+              title="Zoom out"
+            >
+              -
+            </button>
+            <span className="board-zoom-value">{Math.round(clampedBoardZoom * 100)}%</span>
+            <button
+              type="button"
+              className="board-zoom-btn"
+              onClick={() => updateBoardZoom(0.1)}
+              disabled={!onBoardZoomChange || !canZoomIn}
+              title="Zoom in"
+            >
+              +
+            </button>
+          </div>
+          <div className="fen-display-container">
+            <div className="fen-content">
+              <button
+                className="copy-btn"
+                onClick={() => navigator.clipboard.writeText(game.fen)}
+                title="Copy FEN to clipboard"
+              >
+                📋
+              </button>
+              <input
+                type="text"
+                value={game.fen}
+                readOnly
+                className="fen-input"
+                size={Math.max(16, Math.min(96, game.fen.length + 1))}
+              />
+            </div>
+          </div>
+        </div>
 
-      {showMoveList && (
-        <MoveList
-          moves={game.moveHistory}
-          isOpen={showMovePopup}
-          onClose={() => dispatchLocal({ type: "set-show-move-popup", payload: false })}
+        {showMoveList && (
+          <MoveList
+            moves={game.moveHistory}
+            isOpen={showMovePopup}
+            onClose={() => dispatchLocal({ type: "set-show-move-popup", payload: false })}
+          />
+        )}
+
+        <SettingsModal />
+
+        <ResignConfirmModal
+          open={showResignConfirm}
+          onConfirm={confirmResign}
+          onCancel={cancelResign}
         />
-      )}
 
-      <SettingsModal />
-
-      <ResignConfirmModal
-        open={showResignConfirm}
-        onConfirm={confirmResign}
-        onCancel={cancelResign}
-      />
-
-      <GameOverModal
-        open={Boolean(gameOverState?.open)}
-        winner={gameOverState?.winner ?? "white"}
-        reason={gameOverState?.reason ?? "checkmate"}
-        winnerName={winnerPlayer?.name ?? "Winner"}
-        loserName={loserPlayer?.name ?? "Loser"}
-        modalRef={gameOverModalRef}
-        modalPos={gameOverModalPos}
-        onDragStart={handleGameOverDragStart}
-        onClose={closeGameOverPopup}
-        onRematch={handleRematch}
-        onSwitchSide={handleSwitchSide}
-      />
-      </ChessDisplayProvider>
-    </div>
+        <GameOverModal
+          open={Boolean(gameOverState?.open)}
+          winner={gameOverState?.winner ?? "white"}
+          reason={gameOverState?.reason ?? "checkmate"}
+          winnerName={winnerPlayer?.name ?? "Winner"}
+          loserName={loserPlayer?.name ?? "Loser"}
+          modalRef={gameOverModalRef}
+          modalPos={gameOverModalPos}
+          onDragStart={handleGameOverDragStart}
+          onClose={closeGameOverPopup}
+          onRematch={handleRematch}
+          onSwitchSide={handleSwitchSide}
+        />
+        </ChessDisplayProvider>
+      </div>
+    </>
   );
 }

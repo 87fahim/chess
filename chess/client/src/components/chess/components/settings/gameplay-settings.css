@@ -1,0 +1,17 @@
+.settings-gameplay__zoom-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.settings-gameplay__zoom-value {
+  min-width: 52px;
+  text-align: center;
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+.settings-gameplay__zoom-slider {
+  width: min(430px, 100%);
+}

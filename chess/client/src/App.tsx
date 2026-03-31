@@ -1,12 +1,11 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
-import Navbar from './components/navbar/Navbar';
 import Login from './components/login/Login';
 import Register from './components/register/Register';
 import Layout from './components/Layout';
 import Missed from './components/missedroutes/Missed';
 import Logout from './components/logout/Logout';
-import Chess from './components/chess';
+import ChessPage from './components/chess/ChessPage';
 import './App.css';
 
 function App() {
@@ -15,8 +14,6 @@ function App() {
       <div className="background-overlay" />
 
       <div className="app-content">
-        <Navbar />
-
         <Routes>
           <Route path="/" element={<Layout />}>
             {/* Redirect root to chess */}
@@ -29,7 +26,7 @@ function App() {
             <Route path="unauthorized" element={<div>Unauthorized</div>} />
 
             {/* Chess */}
-            <Route path="chess" element={<Chess showMoveList orientation="white" allowUndo allowReset />} />
+            <Route path="chess" element={<ChessPage />} />
 
             {/* 404 */}
             <Route path="*" element={<Missed />} />

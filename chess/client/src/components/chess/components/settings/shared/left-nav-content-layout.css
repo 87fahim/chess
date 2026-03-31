@@ -1,0 +1,111 @@
+.left-nav-content-layout {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  gap: 12px;
+  min-height: 0;
+  height: 100%;
+}
+
+.left-nav-content-layout__nav {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.left-nav-content-layout__nav-list {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+}
+
+.left-nav-content-layout__item {
+  text-align: left;
+  display: grid;
+  grid-template-columns: 22px minmax(0, 1fr);
+  grid-template-areas:
+    "icon label"
+    "icon desc";
+  column-gap: 8px;
+  row-gap: 2px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 8px 9px;
+  background: var(--btn-muted-bg);
+  color: var(--btn-muted-text);
+  font-weight: 600;
+}
+
+.left-nav-content-layout__item-icon {
+  grid-area: icon;
+  display: inline-grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in hsl, var(--bg-light) 65%, transparent);
+  color: var(--text);
+  font-size: 0.75rem;
+  font-weight: 800;
+}
+
+.left-nav-content-layout__item-icon svg {
+  font-size: 0.95rem;
+}
+
+.left-nav-content-layout__item strong {
+  grid-area: label;
+  font-size: 0.88rem;
+  color: var(--text);
+}
+
+.left-nav-content-layout__item small {
+  grid-area: desc;
+  font-size: 0.7rem;
+  color: var(--text-muted);
+}
+
+.left-nav-content-layout__item.is-active {
+  border-color: color-mix(in hsl, var(--accent) 44%, var(--border));
+  background: color-mix(in hsl, var(--accent) 20%, var(--bg));
+  color: var(--text);
+}
+
+.left-nav-content-layout__content {
+  min-width: 0;
+  min-height: 0;
+}
+
+@media (max-width: 1000px) {
+  .left-nav-content-layout {
+    grid-template-columns: 64px minmax(0, 1fr);
+  }
+
+  .left-nav-content-layout__item {
+    text-align: center;
+    grid-template-columns: 1fr;
+    grid-template-areas: "icon";
+    place-items: center;
+    min-height: 42px;
+    padding: 6px 4px;
+  }
+
+  .left-nav-content-layout__item strong,
+  .left-nav-content-layout__item small {
+    display: none;
+  }
+
+  .left-nav-content-layout__item-icon {
+    display: grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 999px;
+    border: 1px solid var(--border);
+    background: color-mix(in hsl, var(--bg-light) 65%, transparent);
+    color: var(--text);
+    font-size: 0.78rem;
+    font-weight: 800;
+  }
+}

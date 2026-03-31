@@ -42,6 +42,34 @@
   border: none;
 }
 
+.play-mode-buttons {
+  display: grid;
+  gap: 0.35rem;
+}
+
+.play-mode-btn {
+  width: 100%;
+  text-align: left;
+  border: 1px solid var(--border, #999);
+  border-radius: 8px;
+  background: color-mix(in hsl, var(--bg-light) 65%, transparent);
+  color: var(--text-primary, var(--text));
+  font-size: 0.78rem;
+  font-weight: 700;
+  padding: 0.5rem 0.6rem;
+  cursor: pointer;
+}
+
+.play-mode-btn:hover {
+  border-color: var(--primary, var(--accent));
+  color: var(--primary, var(--accent));
+}
+
+.play-mode-btn.is-active {
+  border-color: var(--primary, var(--accent));
+  background: color-mix(in hsl, var(--accent) 20%, var(--bg));
+}
+
 .mode-radios label,
 .turn-radios label,
 .castling-checkboxes label {

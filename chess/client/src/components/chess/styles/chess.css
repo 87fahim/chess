@@ -1,22 +1,22 @@
-.chess-wrapper {
+.chess-main-stack {
+  min-height: 100%;
   display: flex;
   flex-direction: column;
-
-  padding: 1rem;
-  max-width: 800px;
-  margin: 0 auto;
-  margin-top: 5px;
-  background-color: var(--bg-light);
-  border-radius: 8px;
-  border: 1px solid var(--border);
-  box-shadow: 0 2px 8px var(--shadow);
+  justify-content: flex-start;
+  gap: 0.35rem;
 }
 
 .chess-main-content {
   display: flex;
-  gap: 1rem;
+  gap: 0.6rem;
   align-items: flex-start;
-  margin-bottom: 1rem;
+  margin-bottom: 0;
+}
+
+.chess-bottom-dock {
+  margin-top: 0;
+  display: grid;
+  gap: 0.25rem;
 }
 
 .chess-side-panel {

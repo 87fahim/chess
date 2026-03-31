@@ -25,7 +25,6 @@ export default function Controls() {
     onNextMove,
     onApplySuggestedMove,
     onOpenMoves,
-    onOpenSettings,
   } = useChessPanelActions();
 
   return (
@@ -79,9 +78,6 @@ export default function Controls() {
           ☰ Moves ({moveCount})
         </button>
       )}
-      <button className="control-btn" onClick={onOpenSettings} title="Open settings">
-        ⚙ Settings
-      </button>
     </div>
   );
 }
