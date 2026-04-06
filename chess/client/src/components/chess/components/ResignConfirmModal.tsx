@@ -1,3 +1,6 @@
+import ChessOverlayModal from "./shared/ChessOverlayModal";
+import ChessButton from "./shared/ChessButton";
+
 type ResignConfirmModalProps = {
   open: boolean;
   onConfirm: () => void;
@@ -5,20 +8,19 @@ type ResignConfirmModalProps = {
 };
 
 export default function ResignConfirmModal({ open, onConfirm, onCancel }: ResignConfirmModalProps) {
-  if (!open) {
-    return null;
-  }
-
   return (
-    <div className="game-over-backdrop" onClick={(e) => e.stopPropagation()}>
-      <div className="game-over-modal resign-confirm-modal" role="dialog" aria-modal="true" aria-label="Confirm resign">
-        <h3 className="game-over-title">Confirm Resign</h3>
-        <p className="game-over-subtitle">Are you sure you want to resign this game?</p>
-        <div className="game-over-actions">
-          <button className="control-btn" onClick={onConfirm}>Yes, Resign</button>
-          <button className="control-btn" onClick={onCancel}>No, Continue</button>
-        </div>
+    <ChessOverlayModal
+      open={open}
+      ariaLabel="Confirm resign"
+      surfaceClassName="game-over-modal resign-confirm-modal"
+      onBackdropClick={(e) => e.stopPropagation()}
+    >
+      <h3 className="game-over-title">Confirm Resign</h3>
+      <p className="game-over-subtitle">Are you sure you want to resign this game?</p>
+      <div className="game-over-actions">
+        <ChessButton variant="panel" onClick={onConfirm}>Yes, Resign</ChessButton>
+        <ChessButton variant="panel" onClick={onCancel}>No, Continue</ChessButton>
       </div>
-    </div>
+    </ChessOverlayModal>
   );
 }

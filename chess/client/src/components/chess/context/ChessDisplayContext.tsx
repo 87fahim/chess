@@ -10,7 +10,6 @@ export type ChessDisplayState = {
   blackPieceColor: PieceColorPreset;
   squarePattern: SquarePatternPreset;
   squarePatternOpacity: number;
-  showSettingsPopup: boolean;
 };
 
 type ChessDisplayAction =
@@ -19,9 +18,7 @@ type ChessDisplayAction =
   | { type: "set-white-piece-color"; payload: PieceColorPreset }
   | { type: "set-black-piece-color"; payload: PieceColorPreset }
   | { type: "set-square-pattern"; payload: SquarePatternPreset }
-  | { type: "set-square-pattern-opacity"; payload: number }
-  | { type: "open-settings" }
-  | { type: "close-settings" };
+  | { type: "set-square-pattern-opacity"; payload: number };
 
 export const initialChessDisplayState: ChessDisplayState = {
   lightSquareColor: "#f0e6d2",
@@ -30,7 +27,6 @@ export const initialChessDisplayState: ChessDisplayState = {
   blackPieceColor: "classic",
   squarePattern: "none",
   squarePatternOpacity: 0.3,
-  showSettingsPopup: false,
 };
 
 export const chessDisplayReducer = (
@@ -50,10 +46,6 @@ export const chessDisplayReducer = (
       return { ...state, squarePattern: action.payload };
     case "set-square-pattern-opacity":
       return { ...state, squarePatternOpacity: action.payload };
-    case "open-settings":
-      return { ...state, showSettingsPopup: true };
-    case "close-settings":
-      return { ...state, showSettingsPopup: false };
     default:
       return state;
   }
@@ -66,8 +58,6 @@ export type ChessDisplayActionsContextValue = {
   setBlackPieceColor: (value: PieceColorPreset) => void;
   setSquarePattern: (value: SquarePatternPreset) => void;
   setSquarePatternOpacity: (value: number) => void;
-  openSettingsPopup: () => void;
-  closeSettingsPopup: () => void;
 };
 
 const ChessDisplayStateContext = createContext<ChessDisplayState | null>(null);

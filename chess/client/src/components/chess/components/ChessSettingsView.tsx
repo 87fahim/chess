@@ -5,12 +5,12 @@ import GameplaySettings from "./settings/GameplaySettings";
 import ProfileSettings from "./settings/ProfileSettings";
 import AccessibilitySettings from "./settings/AccessibilitySettings";
 import type { BoardPreset, SettingsTabKey, ThemePreset } from "./settings/Settings.types";
-import LeftNavContentLayout, { type LeftNavItem } from "./settings/shared/LeftNavContentLayout";
-import MainContentWindow from "./shared/MainContentWindow";
+import LeftNavContentLayout, { type LeftNavItem } from "./shared/LeftNavContentLayout";
 import GridViewOutlinedIcon from "@mui/icons-material/GridViewOutlined";
 import SportsEsportsOutlinedIcon from "@mui/icons-material/SportsEsportsOutlined";
 import PersonOutlineOutlinedIcon from "@mui/icons-material/PersonOutlineOutlined";
 import AccessibilityNewOutlinedIcon from "@mui/icons-material/AccessibilityNewOutlined";
+import ChessButton from "./shared/ChessButton";
 
 type ChessSettingsViewProps = {
   currentTheme: "light" | "dark";
@@ -42,6 +42,11 @@ const BOARD_PRESETS: BoardPreset[] = [
   { name: "Forest", light: "#dce9d6", dark: "#6f8b63" },
   { name: "Sand", light: "#ead9bd", dark: "#b58b61" },
   { name: "Ink", light: "#d7d8db", dark: "#5e6168" },
+  { name: "Ocean", light: "#c7e9f0", dark: "#1a4d6d" },
+  { name: "Marble", light: "#f5f3f0", dark: "#3d3d3d" },
+  { name: "Sunset", light: "#f5d5c0", dark: "#d97c3e" },
+  { name: "Purple", light: "#e8d9f0", dark: "#6b3d8b" },
+  { name: "Teal", light: "#d0f0e8", dark: "#2d8b7d" },
 ];
 
 const SETTINGS_TABS: Array<{ key: SettingsTabKey; label: string; hint: string }> = [
@@ -77,6 +82,14 @@ export default function ChessSettingsView({
 
   const activeTabMeta = SETTINGS_TABS.find((item) => item.key === activeTab) ?? SETTINGS_TABS[0];
 
+  const handleSave = () => {
+    onSave({
+      theme: themeDraft,
+      boardZoom: zoomDraft,
+      appearanceSettings: appearanceDraft,
+    });
+  };
+
   useEffect(() => {
     onPreview({
       theme: themeDraft,
@@ -109,8 +122,8 @@ export default function ChessSettingsView({
     }
   };
 
-  return (
-    <MainContentWindow className="chess-settings-view" ariaLabel="Chess settings">
+  const content = (
+    <div className="chess-settings-view" aria-label="Chess settings">
       <header className="chess-settings-view__header">
         <h2>Settings</h2>
         <p>Choose your board and piece look, then save to apply.</p>
@@ -120,36 +133,29 @@ export default function ChessSettingsView({
         items={SETTINGS_TAB_ITEMS}
         activeKey={activeTab}
         onSelect={(key) => setActiveTab(key as SettingsTabKey)}
-        navAriaLabel="Settings categories"
-        className="chess-main-layout chess-settings-view__body"
-        navClassName="chess-main-layout__nav chess-settings-view__rail"
-        wrapContent={false}
         renderContent={() => (
           <div className="chess-settings-view__content" role="tabpanel" aria-label={activeTabMeta.label}>
             <h3 className="chess-settings-view__content-title">{activeTabMeta.label}</h3>
             {renderTabContent()}
           </div>
         )}
+        navAriaLabel="Settings categories"
+        className="chess-settings-view__body"
+        navClassName="chess-main-layout__nav chess-settings-view__rail"
+        navFooter={
+          <div className="chess-settings-view__actions chess-settings-view__actions--rail">
+            <ChessButton variant="solid" tone="secondary" fullWidth onClick={onCancel}>
+              Cancel
+            </ChessButton>
+            <ChessButton variant="solid" fullWidth onClick={handleSave}>
+              Save
+            </ChessButton>
+          </div>
+        }
+        wrapContent={false}
       />
-
-      <footer className="chess-settings-view__actions">
-        <button type="button" className="chess-settings-btn chess-settings-btn--secondary" onClick={onCancel}>
-          Cancel
-        </button>
-        <button
-          type="button"
-          className="chess-settings-btn"
-          onClick={() =>
-            onSave({
-              theme: themeDraft,
-              boardZoom: zoomDraft,
-              appearanceSettings: appearanceDraft,
-            })
-          }
-        >
-          Save
-        </button>
-      </footer>
-    </MainContentWindow>
+    </div>
   );
+
+  return content;
 }

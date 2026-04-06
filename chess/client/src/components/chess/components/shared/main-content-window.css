@@ -3,12 +3,15 @@
   height: 100%;
   flex: 1 1 auto;
   align-self: stretch;
-  background: color-mix(in hsl, var(--bg-light) 74%, transparent);
+  background: var(--bg);
   border: 1px solid var(--border);
+  border-left: none;
   border-radius: 14px;
   padding: 12px;
   display: grid;
-  align-content: start;
+  grid-template-rows: minmax(0, 1fr);
+  align-content: stretch;
+  align-items: stretch;
   gap: 8px;
   min-height: 0;
   max-height: none;

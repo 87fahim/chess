@@ -1,5 +1,6 @@
 import { useMemo } from "react";
 import { ChessMovePayload } from "../Chess.types";
+import ChessOverlayModal from "./shared/ChessOverlayModal";
 
 type MoveListProps = {
   moves: ChessMovePayload[];
@@ -34,11 +35,15 @@ export default function MoveList({ moves, isOpen, onClose }: MoveListProps) {
     };
   }, [moves]);
 
-  if (!isOpen) return null;
-
   return (
-    <div className="move-popup-backdrop" onClick={onClose}>
-      <div className="move-popup" onClick={(e) => e.stopPropagation()}>
+    <ChessOverlayModal
+      open={isOpen}
+      ariaLabel="All moves"
+      backdropClassName="move-popup-backdrop"
+      surfaceClassName="move-popup"
+      onBackdropClick={onClose}
+      onSurfaceClick={(e) => e.stopPropagation()}
+    >
         <div className="move-popup-header">
           <strong>All Moves</strong>
         </div>
@@ -60,8 +65,7 @@ export default function MoveList({ moves, isOpen, onClose }: MoveListProps) {
             </ul>
           </div>
         </div>
-      </div>
-    </div>
+    </ChessOverlayModal>
   );
 }
 

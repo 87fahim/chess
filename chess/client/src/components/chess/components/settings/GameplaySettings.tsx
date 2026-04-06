@@ -1,4 +1,6 @@
 import "./gameplay-settings.css";
+import ChessButton from "../shared/ChessButton";
+import ChessSection from "../shared/ChessSection";
 
 type GameplaySettingsProps = {
   zoom: number;
@@ -11,21 +13,24 @@ export default function GameplaySettings({ zoom, onZoomChange }: GameplaySetting
   const resetZoom = () => onZoomChange(1);
 
   return (
-    <section className="chess-settings-view__card">
-      <h3>Board Zoom</h3>
-      <p className="chess-settings-view__hint">Increase or reduce board size without affecting layout.</p>
+    <ChessSection
+      className="chess-settings-view__card"
+      title="Board Zoom"
+      hint="Increase or reduce board size without affecting layout."
+      hintClassName="chess-settings-view__hint chess-section__hint"
+    >
 
       <div className="settings-gameplay__zoom-row">
-        <button type="button" className="chess-settings-chip" onClick={decreaseZoom}>
+        <ChessButton variant="chip" onClick={decreaseZoom}>
           -
-        </button>
+        </ChessButton>
         <span className="settings-gameplay__zoom-value">{Math.round(zoom * 100)}%</span>
-        <button type="button" className="chess-settings-chip" onClick={increaseZoom}>
+        <ChessButton variant="chip" onClick={increaseZoom}>
           +
-        </button>
-        <button type="button" className="chess-settings-chip" onClick={resetZoom}>
+        </ChessButton>
+        <ChessButton variant="chip" onClick={resetZoom}>
           Reset
-        </button>
+        </ChessButton>
       </div>
 
       <input
@@ -38,6 +43,6 @@ export default function GameplaySettings({ zoom, onZoomChange }: GameplaySetting
         onChange={(event) => onZoomChange(Number(event.target.value))}
         aria-label="Board zoom"
       />
-    </section>
+    </ChessSection>
   );
 }

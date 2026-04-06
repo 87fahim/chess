@@ -16,7 +16,7 @@
   gap: 0.2rem;
 }
 
-.option-section h4 {
+.option-section__title {
   margin: 0;
   font-size: 0.68rem;
   font-weight: 700;
@@ -45,29 +45,6 @@
 .play-mode-buttons {
   display: grid;
   gap: 0.35rem;
-}
-
-.play-mode-btn {
-  width: 100%;
-  text-align: left;
-  border: 1px solid var(--border, #999);
-  border-radius: 8px;
-  background: color-mix(in hsl, var(--bg-light) 65%, transparent);
-  color: var(--text-primary, var(--text));
-  font-size: 0.78rem;
-  font-weight: 700;
-  padding: 0.5rem 0.6rem;
-  cursor: pointer;
-}
-
-.play-mode-btn:hover {
-  border-color: var(--primary, var(--accent));
-  color: var(--primary, var(--accent));
-}
-
-.play-mode-btn.is-active {
-  border-color: var(--primary, var(--accent));
-  background: color-mix(in hsl, var(--accent) 20%, var(--bg));
 }
 
 .mode-radios label,
@@ -126,22 +103,6 @@
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 0.35rem;
-}
-
-.mode-action-btn {
-  font-size: 0.73rem;
-  line-height: 1.2;
-  border: 1px solid var(--border, #999);
-  background: transparent;
-  color: var(--text-primary, var(--text));
-  border-radius: 6px;
-  padding: 0.35rem 0.45rem;
-  cursor: pointer;
-}
-
-.mode-action-btn:hover {
-  border-color: var(--primary, var(--accent));
-  color: var(--primary, var(--accent));
 }
 
 .level-slider-wrap {

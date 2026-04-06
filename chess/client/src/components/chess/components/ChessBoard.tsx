@@ -25,6 +25,7 @@ type ChessBoardAnimationProps = {
     piece: PieceCode;
     token: number;
   };
+  startTransitionToken?: number;
   onAnimatedMoveEnd?: () => void;
 };
 
@@ -61,9 +62,12 @@ export default function ChessBoard({
     bottomAdvantage = 0,
   } = players;
   const { animatedMove, onAnimatedMoveEnd } = animation ?? {};
+  const startTransitionToken = animation?.startTransitionToken ?? 0;
 
   const boardGridRef = useRef<HTMLDivElement | null>(null);
+  const startCurtainTimerRef = useRef<number | null>(null);
   const [ghostStyle, setGhostStyle] = useState<React.CSSProperties | null>(null);
+  const [showStartCurtain, setShowStartCurtain] = useState(false);
 
   const ghostPieceSrc = useMemo(() => {
     if (!animatedMove) return null;
@@ -99,6 +103,29 @@ export default function ChessBoard({
       "--engine-move-dy": `${toRect.top - fromRect.top}px`,
     } as React.CSSProperties);
   }, [animatedMove, onAnimatedMoveEnd]);
+
+  useEffect(() => {
+    if (startTransitionToken <= 0) {
+      return;
+    }
+
+    if (startCurtainTimerRef.current !== null) {
+      window.clearTimeout(startCurtainTimerRef.current);
+    }
+
+    setShowStartCurtain(true);
+    startCurtainTimerRef.current = window.setTimeout(() => {
+      setShowStartCurtain(false);
+      startCurtainTimerRef.current = null;
+    }, 2300);
+
+    return () => {
+      if (startCurtainTimerRef.current !== null) {
+        window.clearTimeout(startCurtainTimerRef.current);
+        startCurtainTimerRef.current = null;
+      }
+    };
+  }, [startTransitionToken]);
 
   const rows =
     orientation === "white"
@@ -213,6 +240,13 @@ export default function ChessBoard({
                   alt={animatedMove.piece}
                   className={`piece ${animatedMove.piece.startsWith("w") ? "piece-white" : "piece-black"}`}
                 />
+              </div>
+            )}
+
+            {showStartCurtain && (
+              <div className="game-start-curtain-layer" aria-hidden="true">
+                <div className="game-start-curtain game-start-curtain-left" />
+                <div className="game-start-curtain game-start-curtain-right" />
               </div>
             )}
           </div>

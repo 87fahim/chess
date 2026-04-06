@@ -1,12 +1,13 @@
 import "./accessibility-settings.css";
+import ChessSection from "../shared/ChessSection";
 
 export default function AccessibilitySettings() {
   return (
-    <section className="chess-settings-view__card settings-accessibility">
-      <h3>Accessibility</h3>
-      <p className="chess-settings-view__hint">
-        Accessibility options are coming next. High contrast and larger text controls will be added here.
-      </p>
-    </section>
+    <ChessSection
+      className="chess-settings-view__card settings-accessibility"
+      title="Accessibility"
+      hint="Accessibility options are coming next. High contrast and larger text controls will be added here."
+      hintClassName="chess-settings-view__hint chess-section__hint"
+    />
   );
 }

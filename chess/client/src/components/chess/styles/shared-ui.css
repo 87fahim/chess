@@ -1,0 +1,111 @@
+.chess-button {
+  border: 1px solid transparent;
+  border-radius: 8px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: border-color 0.15s ease, background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.chess-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.chess-button:focus-visible {
+  outline: 1px dashed var(--border);
+  outline-offset: 2px;
+}
+
+.chess-button--full-width {
+  width: 100%;
+}
+
+.chess-button--center {
+  text-align: center;
+  justify-content: center;
+}
+
+.chess-button--text {
+  padding: 0;
+  font-size: 0.78rem;
+  line-height: 1.2;
+  background: none;
+  border: none;
+  color: var(--link, var(--accent));
+  text-align: left;
+}
+
+.chess-button--text:hover:not(:disabled) {
+  color: var(--primary, var(--text));
+}
+
+.chess-button--panel {
+  background: color-mix(in hsl, var(--bg-light) 65%, transparent);
+  border-color: var(--border, #999);
+  color: var(--text-primary, var(--text));
+  font-size: 0.78rem;
+  padding: 0.5rem 0.6rem;
+  text-align: left;
+}
+
+.chess-button--panel:hover:not(:disabled) {
+  border-color: var(--primary, var(--accent));
+  color: var(--primary, var(--accent));
+}
+
+.chess-button--panel.is-active {
+  border-color: var(--primary, var(--accent));
+  background: color-mix(in hsl, var(--accent) 20%, var(--bg));
+}
+
+.chess-button--chip {
+  background: var(--btn-muted-bg);
+  border-color: var(--border);
+  color: var(--btn-muted-text);
+  border-radius: 7px;
+  padding: 5px 9px;
+  font-size: 0.82rem;
+}
+
+.chess-button--chip:hover:not(:disabled) {
+  border-color: color-mix(in hsl, var(--accent) 44%, var(--border));
+  color: var(--text);
+}
+
+.chess-button--chip.is-active {
+  background: color-mix(in hsl, var(--accent) 22%, var(--bg));
+  color: var(--text);
+}
+
+.chess-button--solid {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  padding: 7px 12px;
+  font-size: 0.88rem;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+}
+
+.chess-button--solid.chess-button--secondary {
+  background: var(--btn-muted-bg);
+  color: var(--btn-muted-text);
+}
+
+.chess-section__hint {
+  margin: 0;
+}
+
+.chess-surface {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  width: fit-content;
+  max-width: 100%;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.35rem 0.45rem;
+  background: color-mix(in hsl, var(--bg-light) 50%, var(--bg));
+  box-shadow: 0 1px 0 color-mix(in hsl, black 6%, transparent);
+}

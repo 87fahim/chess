@@ -30,21 +30,9 @@
 
 // export default db;
 import { MongoClient, ServerApiVersion } from "mongodb";
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
+import config from "../config/appConfig.js";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({
-  path: path.resolve(__dirname, "../config.env"),
-  override: true,
-});
-
-const uri = process.env.ATLAS_URI || "NO ATLAS URI!!!";
-
-const client = new MongoClient(uri, {
+const client = new MongoClient(config.mongoUri, {
   serverApi: {
     version: ServerApiVersion.v1,
     strict: true,
@@ -52,20 +40,23 @@ const client = new MongoClient(uri, {
   },
 });
 
-let db;
+let databasePromise;
 
 const connectDB = async () => {
-  if (!db) {
-    try {
-      await client.connect();
-      db = client.db("SecurePass");
-      console.log("✅ Connected to MongoDB successfully.");
-    } catch (err) {
-      console.error("❌ MongoDB Connection Error:", err);
-      process.exit(1); // Exit the process if connection fails
-    }
+  if (!databasePromise) {
+    databasePromise = client
+      .connect()
+      .then(() => {
+        console.log(`Connected to MongoDB '${config.mongoDbName}'.`);
+        return client.db(config.mongoDbName);
+      })
+      .catch((error) => {
+        databasePromise = undefined;
+        throw error;
+      });
   }
-  return db;
+
+  return databasePromise;
 };
 
 export default connectDB;

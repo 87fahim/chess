@@ -1,14 +1,16 @@
 import { useEffect, useMemo, useReducer, useRef, useState, type CSSProperties } from "react";
 import { Chess as ChessJs } from "chess.js";
+import { apiFetch } from "../../utils/api";
 import { ChessProps, BoardOrientation } from "./Chess.types";
 import ChessBoard from "./components/ChessBoard";
 import Controls from "./components/Controls";
 import MoveList from "./components/MoveList";
 import GameStatus from "./components/GameStatus";
 import GameOptions, { GameMode, PieceColorPreset } from "./components/GameOptions";
-import SettingsModal from "./components/SettingsModal";
 import ResignConfirmModal from "./components/ResignConfirmModal";
 import GameOverModal from "./components/GameOverModal";
+import BoardZoomDock from "./components/shared/BoardZoomDock";
+import FenDock from "./components/shared/FenDock";
 import { PieceCode } from "./components/Piece";
 import useChessGame from "./hooks/useChessGame";
 import { ChessBoardProvider } from "./context/ChessContext";
@@ -27,6 +29,7 @@ import "./styles/controls.css";
 import "./styles/status.css";
 import "./styles/fen.css";
 import "./styles/game-options.css";
+import "./styles/shared-ui.css";
 
 type PlayerBadge = {
   name: string;
@@ -139,6 +142,7 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
   const auth = useAuth() as any;
   const loggedInUser = auth?.user ?? null;
   const [currentOrientation, setCurrentOrientation] = useState<BoardOrientation>(orientation);
+  const [boardStartAnimationToken, setBoardStartAnimationToken] = useState(0);
   const [displayState, dispatchDisplay] = useReducer(chessDisplayReducer, initialChessDisplayState);
   const [uiState, dispatchUi] = useReducer(chessUiReducer, initialChessUiState);
   const [localState, dispatchLocal] = useReducer(chessLocalReducer, initialChessLocalState);
@@ -161,7 +165,6 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
       blackPieceColor,
       squarePattern,
       squarePatternOpacity,
-      showSettingsPopup,
     } = displayState;
 
   const gameOverModalRef = useRef<HTMLDivElement>(null);
@@ -174,6 +177,10 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
 
   const flip = () => {
     setCurrentOrientation(prev => prev === "white" ? "black" : "white");
+  };
+
+  const triggerBoardStartAnimation = () => {
+    setBoardStartAnimationToken((prev) => prev + 1);
   };
 
   const boardStyle = {
@@ -427,10 +434,9 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
     }
 
     const engineParams = getEngineParamsByLevel(level ?? 10);
-    const response = await fetch("/api/chess/next-move", {
+    const response = await apiFetch("/api/chess/next-move", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      credentials: "include",
       body: JSON.stringify({
         fen: game.fen,
         movetime: engineParams.movetime,
@@ -635,6 +641,7 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
     }
     dispatchLocal({ type: "set-suggested-move", payload: null });
     dispatchLocal({ type: "set-next-move-error", payload: null });
+    triggerBoardStartAnimation();
   };
 
   const handleStartComputerGame = (color: "white" | "black") => {
@@ -648,6 +655,7 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
     game.reset();
     dispatchLocal({ type: "set-suggested-move", payload: null });
     dispatchLocal({ type: "set-next-move-error", payload: null });
+    triggerBoardStartAnimation();
   };
 
   const handleComputerLevelChange = (level: number) => {
@@ -873,8 +881,6 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
             setBlackPieceColor: (value) => dispatchDisplay({ type: "set-black-piece-color", payload: value }),
             setSquarePattern: (value) => dispatchDisplay({ type: "set-square-pattern", payload: value }),
             setSquarePatternOpacity: (value) => dispatchDisplay({ type: "set-square-pattern-opacity", payload: value }),
-            openSettingsPopup: () => dispatchDisplay({ type: "open-settings" }),
-            closeSettingsPopup: () => dispatchDisplay({ type: "close-settings" }),
           }}
         >
         <div className={["chess-main-content", className].join(" ")} style={boardStyle}>
@@ -911,6 +917,7 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
             }}
             animation={{
               animatedMove: animatedEngineMove ?? undefined,
+              startTransitionToken: boardStartAnimationToken,
               onAnimatedMoveEnd: () => dispatchLocal({ type: "set-animated-engine-move", payload: null }),
             }}
           />
@@ -952,7 +959,6 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
             onNextMove: requestNextMove,
             onApplySuggestedMove: applySuggestedMove,
             onOpenMoves: () => dispatchLocal({ type: "set-show-move-popup", payload: true }),
-            onOpenSettings: () => dispatchDisplay({ type: "open-settings" }),
           }}
         >
           <div className="chess-side-panel">
@@ -962,45 +968,14 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
         </ChessPanelProvider>
         </div>
         <div className="chess-bottom-dock">
-          <div className="board-zoom-controls" aria-label="Board zoom controls">
-            <button
-              type="button"
-              className="board-zoom-btn"
-              onClick={() => updateBoardZoom(-0.1)}
-              disabled={!onBoardZoomChange || !canZoomOut}
-              title="Zoom out"
-            >
-              -
-            </button>
-            <span className="board-zoom-value">{Math.round(clampedBoardZoom * 100)}%</span>
-            <button
-              type="button"
-              className="board-zoom-btn"
-              onClick={() => updateBoardZoom(0.1)}
-              disabled={!onBoardZoomChange || !canZoomIn}
-              title="Zoom in"
-            >
-              +
-            </button>
-          </div>
-          <div className="fen-display-container">
-            <div className="fen-content">
-              <button
-                className="copy-btn"
-                onClick={() => navigator.clipboard.writeText(game.fen)}
-                title="Copy FEN to clipboard"
-              >
-                📋
-              </button>
-              <input
-                type="text"
-                value={game.fen}
-                readOnly
-                className="fen-input"
-                size={Math.max(16, Math.min(96, game.fen.length + 1))}
-              />
-            </div>
-          </div>
+          <BoardZoomDock
+            zoom={clampedBoardZoom}
+            canZoomOut={canZoomOut}
+            canZoomIn={canZoomIn}
+            disabled={!onBoardZoomChange}
+            onZoomStep={updateBoardZoom}
+          />
+          <FenDock fen={game.fen} />
         </div>
 
         {showMoveList && (
@@ -1010,8 +985,6 @@ export default function Chess({ initialFen = "start", orientation = "white", sho
             onClose={() => dispatchLocal({ type: "set-show-move-popup", payload: false })}
           />
         )}
-
-        <SettingsModal />
 
         <ResignConfirmModal
           open={showResignConfirm}

@@ -1,68 +1,106 @@
 import React, { useState, useRef, useEffect } from "react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
-import "./Login.css";
 import useAuth from "../../hooks/userAuth";
-import { useNotification } from "../notifications/NotificationProvider"; // ✅ use the hook, not the provider
+import { useNotification } from "../notifications/NotificationProvider";
+import AuthShell from "../auth/AuthShell";
+import AuthField from "../auth/AuthField";
+import AuthFeedback from "../auth/AuthFeedback";
+import { validateLoginForm } from "../auth/authValidators";
 
 const Login = () => {
   const userRef = useRef();
   const [username, setUserName] = useState("");
   const [password, setPassword] = useState("");
+  const [errors, setErrors] = useState({});
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [statusMessage, setStatusMessage] = useState("");
   const { login } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
   const from = location.state?.from?.pathname || "/chess";
-
-  // ✅ get notify/confirm from the hook
-  const { notify, confirm } = useNotification();
+  const successMessage = typeof location.state?.message === "string" ? location.state.message : "";
+  const { notify } = useNotification();
 
   useEffect(() => {
     userRef.current?.focus();
   }, []);
 
-  const processSignin = async (e) => {
-    e.preventDefault();
+  const handleFieldChange = (setter, fieldName) => (event) => {
+    setter(event.target.value);
+    setStatusMessage("");
+    setErrors((prev) => ({ ...prev, [fieldName]: "" }));
+  };
+
+  const processSignin = async (event) => {
+    event.preventDefault();
+
+    const nextErrors = validateLoginForm({ username, password });
+    setErrors(nextErrors);
+    if (Object.keys(nextErrors).length > 0) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    setStatusMessage("");
+
     try {
-      await login(username, password); // sets user/roles in context; cookie set by server
+      await login(username.trim(), password);
       setUserName("");
       setPassword("");
       navigate(from, { replace: true });
-
       notify({ message: "Logged in successfully", type: "success" });
     } catch (err) {
-      notify({ message: err?.message || "Login failed. Please try again.", type: "error" });
+      const message = err?.message || "Login failed. Please try again.";
+      setStatusMessage(message);
+      notify({ message, type: "error" });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="login-wrapper">
-      <div className="login">
-        <form onSubmit={processSignin} className="sign-in-form">
-          <label htmlFor="username">Username</label>
-          <input
-            id="username"
-            ref={userRef}
-            value={username}
-            onChange={(e) => setUserName(e.target.value)}
-            required
-          />
-          <label htmlFor="password">Password</label>
-          <input
-            id="password"
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            required
-          />
-          <button type="submit" className="sign-in-button">Sign In</button>
-
-          <p className="not-have-account">Don't have an account?</p>
-          <Link to="/register" className="register-link">
-            <button className="register-button-login" type="button">Register</button>
+    <AuthShell
+      title="Sign In"
+      description="Use your ChessApp account to continue to your board, settings, and saved experience."
+      footer={
+        <>
+          <p className="auth-footer__text">Don't have an account?</p>
+          <Link to="/register" className="auth-link-button auth-link-button--secondary">
+            Create Account
           </Link>
-        </form>
-      </div>
-    </div>
+        </>
+      }
+    >
+      <AuthFeedback message={statusMessage} tone="error" />
+      {!statusMessage && successMessage ? <AuthFeedback message={successMessage} tone="success" /> : null}
+      <form onSubmit={processSignin} className="auth-form" noValidate>
+        <AuthField
+          id="username"
+          label="Username"
+          inputRef={userRef}
+          value={username}
+          onChange={handleFieldChange(setUserName, "username")}
+          autoComplete="username"
+          required
+          error={errors.username}
+          disabled={isSubmitting}
+        />
+        <AuthField
+          id="password"
+          label="Password"
+          type="password"
+          value={password}
+          onChange={handleFieldChange(setPassword, "password")}
+          autoComplete="current-password"
+          required
+          error={errors.password}
+          disabled={isSubmitting}
+        />
+        <button type="submit" className="auth-submit" disabled={isSubmitting} aria-busy={isSubmitting}>
+          {isSubmitting ? "Signing In..." : "Sign In"}
+        </button>
+      </form>
+    </AuthShell>
   );
 };
 

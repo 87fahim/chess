@@ -1,4 +1,5 @@
 import { useChessPanelActions, useChessPanelState } from "../context/ChessPanelContext";
+import ChessButton from "./shared/ChessButton";
 
 export default function Controls() {
   const {
@@ -30,39 +31,39 @@ export default function Controls() {
   return (
     <div className="controls">
       {allowUndo && (
-        <button
-          className="control-btn"
+        <ChessButton
+          variant="text"
           onClick={onUndo}
           title={freeStyle ? "Undo last move" : "Undo disabled when Free Style is off"}
           disabled={!freeStyle}
         >
           ↶ Undo Move
-        </button>
+        </ChessButton>
       )}
       {allowReset && (
-        <button className="control-btn" onClick={onReset} title={freeStyle ? "Reset game" : "Resign game"}>
+        <ChessButton variant="text" onClick={onReset} title={freeStyle ? "Reset game" : "Resign game"}>
           ⟲ {freeStyle ? "Reset Board" : "Resign"}
-        </button>
+        </ChessButton>
       )}
       {allowFlip && (
-        <button className="control-btn" onClick={onFlip} title="Flip board">
+        <ChessButton variant="text" onClick={onFlip} title="Flip board">
           ↑↓ Flip Board
-        </button>
+        </ChessButton>
       )}
       {allowClearAll && (
-        <button className="control-btn clear-all-btn" onClick={onClearAll} title="Clear all pieces except kings">
-          🗙 Clear Baord
-        </button>
+        <ChessButton variant="text" onClick={onClearAll} title="Clear all pieces except kings">
+          🗙 Clear Board
+        </ChessButton>
       )}
       {canRequestNextMove && (
-        <button
-          className="control-btn"
+        <ChessButton
+          variant="text"
           onClick={onNextMove}
           title={nextMoveDisabledReason ?? "Calculate best move from current position"}
           disabled={nextMoveDisabled}
         >
           {nextMoveLoading ? "⌛ Thinking..." : "▶ Next Move"}
-        </button>
+        </ChessButton>
       )}
       {suggestedMoveText && canApplySuggestedMove && (
         <div className="suggested-move-row">
@@ -74,9 +75,9 @@ export default function Controls() {
       )}
       {nextMoveError && <div className="next-move-error">{nextMoveError}</div>}
       {showMoveList && (
-        <button className="control-btn" onClick={onOpenMoves} title="View move history">
+        <ChessButton variant="text" onClick={onOpenMoves} title="View move history">
           ☰ Moves ({moveCount})
-        </button>
+        </ChessButton>
       )}
     </div>
   );

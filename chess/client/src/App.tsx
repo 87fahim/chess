@@ -1,5 +1,5 @@
 import React from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import Login from './components/login/Login';
 import Register from './components/register/Register';
 import Layout from './components/Layout';
@@ -9,8 +9,11 @@ import ChessPage from './components/chess/ChessPage';
 import './App.css';
 
 function App() {
+  const location = useLocation();
+  const isChessRoute = location.pathname.startsWith('/chess');
+
   return (
-    <div className="App">
+    <div className={`App ${isChessRoute ? 'app-theme--chess' : 'app-theme--site'}`}>
       <div className="background-overlay" />
 
       <div className="app-content">

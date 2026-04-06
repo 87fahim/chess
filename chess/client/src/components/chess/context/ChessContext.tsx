@@ -1,6 +1,6 @@
 import { createContext, ReactNode, useContext } from "react";
 import { BoardOrientation } from "../Chess.types";
-import { Board } from "../logic/chessEngine";
+import type { Board } from "../types/board";
 
 export type ChessBoardStateContextValue = {
 	board: Board;

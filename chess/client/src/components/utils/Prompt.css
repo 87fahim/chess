@@ -1,0 +1,48 @@
+.prompt__backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  background: color-mix(in hsl, black 46%, transparent);
+  backdrop-filter: blur(6px);
+}
+
+.prompt__dialog {
+  width: min(460px, 100%);
+  display: grid;
+  gap: 14px;
+  padding: 22px 20px;
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  background:
+    linear-gradient(180deg, color-mix(in hsl, var(--bg-light) 28%, transparent), transparent 110px),
+    var(--panel, var(--bg));
+  color: var(--text);
+  box-shadow: var(--shadow);
+  text-align: left;
+}
+
+.prompt__title {
+  margin: 0;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.prompt__message {
+  margin: 0;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
+
+.prompt__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.prompt__actions .btn {
+  min-width: 112px;
+}

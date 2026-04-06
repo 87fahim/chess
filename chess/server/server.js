@@ -2,39 +2,50 @@
 import express from "express";
 import cors from "cors";
 import cookieParser from "cookie-parser";
-import dotenv from "dotenv";
-import path from "path";
-import { fileURLToPath } from "url";
-
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = path.dirname(__filename);
-
-dotenv.config({
-  path: path.resolve(__dirname, "config.env"),
-  override: true,
-});
-
 import auth from "./routes/auth.js";
 import chess from "./routes/chess.js";
+import connectDB from "./db/connection.js";
+import config from "./config/appConfig.js";
+import { applySecurityMiddleware } from "./middleware/security.js";
 
-const PORT = process.env.PORT || 5050;
 const app = express();
+const allowedOrigins = new Set(config.allowedOrigins);
 
-// CORS must allow credentials and your dev origin
-app.use(
-  cors({
-    origin: "http://localhost:5173",
-    credentials: true,
-    methods: ["GET", "PUT", "POST", "DELETE"],
-  })
-);
+applySecurityMiddleware(app);
 
-app.use(cookieParser()); // ✅ read HttpOnly cookies
-app.use(express.json());
+const corsOptions = {
+  origin(origin, callback) {
+    if (!origin || allowedOrigins.has(origin)) {
+      callback(null, true);
+      return;
+    }
+
+    callback(new Error(`CORS blocked for origin '${origin}'.`));
+  },
+  credentials: true,
+  methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
+
+app.use(cookieParser());
+app.use(express.json({ limit: config.requestBodyLimit }));
+
+app.get("/api/health", (_req, res) => {
+  res.json({ ok: true, env: config.nodeEnv });
+});
 
 app.use("/api/auth", auth);
 app.use("/api/chess", chess);
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+try {
+  await connectDB();
+  app.listen(config.port, () => {
+    console.log(`Server listening on port ${config.port}`);
+  });
+} catch (error) {
+  console.error("Failed to start server:", error);
+  process.exit(1);
+}

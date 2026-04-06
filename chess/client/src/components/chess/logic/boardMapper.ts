@@ -1,4 +1,4 @@
-import { Board } from "./chessEngine";
+import type { Board } from "../types/board";
 
 export const startFENtoBoard = (fen: string): Board => {
   const rows = fen.split(" ")[0].split("/");

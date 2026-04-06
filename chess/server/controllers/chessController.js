@@ -2,6 +2,7 @@ import fs from "fs";
 import path from "path";
 import { spawn } from "child_process";
 import { fileURLToPath } from "url";
+import config from "../config/appConfig.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -15,7 +16,7 @@ const bundledStockfishCandidates = [
 ].map((fileName) => path.resolve(__dirname, "../stockfishengin", fileName));
 
 const resolveStockfishPath = () => {
-  const configuredPath = process.env.STOCKFISH_PATH?.trim();
+  const configuredPath = config.stockfishPath || undefined;
 
   if (configuredPath && fs.existsSync(configuredPath)) {
     return { enginePath: configuredPath, configuredPath };

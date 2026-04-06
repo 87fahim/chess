@@ -1,7 +1,6 @@
 import { Chess } from "chess.js";
 import { GameResult } from "../Chess.types";
 import { CastlingRights, FreeStyleValidation, GameTurn } from "./useChessGame.types";
-import { getRulesEngine } from "../logic/rulesAdapter";
 
 export const DEFAULT_WHITE_PIECES = ["wp", "wn", "wb", "wr", "wq", "wk"];
 export const DEFAULT_BLACK_PIECES = ["bp", "bn", "bb", "br", "bq", "bk"];
@@ -22,13 +21,11 @@ export const getStatusFromGame = (game: Chess | null, fen: string): "checkmate" 
     return "ongoing";
   }
 
-  const rulesEngine = getRulesEngine();
-
-  if (rulesEngine.isCheckmate(fen)) {
+  if (game.isCheckmate()) {
     return "checkmate";
   }
 
-  if (rulesEngine.isStalemate(fen)) {
+  if (game.isStalemate()) {
     return "stalemate";
   }
 
@@ -44,7 +41,13 @@ export const getValidMoves = (game: Chess | null, freeStyle: boolean, selectedSq
     return [];
   }
 
-  return getRulesEngine().getValidMoves(game.fen(), selectedSquare);
+  try {
+    return (game.moves({ square: selectedSquare as any, verbose: true }) as Array<{ to?: string }>).map(
+      (move) => move.to ?? ""
+    );
+  } catch {
+    return [];
+  }
 };
 
 export const squareToCoords = (square: string): [number, number] => {
@@ -195,16 +198,16 @@ export const validateFreeStylePosition = (
 };
 
 export const createGameResult = (ruleGame: Chess, activeTurn: GameTurn): GameResult => ({
-  result: getRulesEngine().isCheckmate(ruleGame.fen())
+  result: ruleGame.isCheckmate()
     ? activeTurn === "white"
       ? "black"
       : "white"
-    : (ruleGame.isDraw() || getRulesEngine().insufficientMaterial(ruleGame.fen()))
+    : (ruleGame.isDraw() || ruleGame.isInsufficientMaterial())
       ? "draw"
       : "ongoing",
   check: ruleGame.isCheck(),
-  checkmate: getRulesEngine().isCheckmate(ruleGame.fen()),
-  stalemate: getRulesEngine().isStalemate(ruleGame.fen()),
+  checkmate: ruleGame.isCheckmate(),
+  stalemate: ruleGame.isStalemate(),
 });
 
 export const parseUciMove = (uciMove: string): { from: string; to: string; promotion: string } | null => {

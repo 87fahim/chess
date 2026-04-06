@@ -66,7 +66,7 @@ chess/server/stockfishengin/stockfish-macos-m1-apple-silicon     ← macOS examp
 
 ### 3 — Set STOCKFISH_PATH in config.env
 
-Open `chess/server/config.env` and set `STOCKFISH_PATH` to the **absolute path** of the binary.
+Copy `chess/server/config.env.example` to `chess/server/config.env` and set `STOCKFISH_PATH` to the **absolute path** of the binary.
 
 **Windows**
 ```env
@@ -98,7 +98,7 @@ sudo apt install stockfish
 
 ## Environment Variables
 
-Create `chess/server/config.env` (use the template below — never commit this file):
+Create `chess/server/config.env` from `chess/server/config.env.example` (never commit this file):
 
 ```env
 # MongoDB connection string (Atlas or local)
@@ -107,6 +107,9 @@ ATLAS_URI=mongodb+srv://<user>:<password>@cluster0.example.mongodb.net/ChessApp?
 # Local MongoDB fallback
 MONGODB_URI=mongodb://localhost:27017/chessapp
 
+# Database name
+MONGODB_DB_NAME=chessapp
+
 # JWT secrets — use long random strings in production
 JWT_SECRET=replace_with_a_strong_random_secret
 JWT_REFRESH_SECRET=replace_with_another_strong_random_secret
@@ -114,8 +117,24 @@ JWT_REFRESH_SECRET=replace_with_another_strong_random_secret
 # Server port
 PORT=5050
 
+# Frontend origin for CORS/cookies
+CLIENT_ORIGIN=http://localhost:5173
+
 # Absolute path to the Stockfish binary
 STOCKFISH_PATH=C:/absolute/path/to/stockfish.exe
+```
+
+Optional client override:
+
+```env
+# chess/client/.env
+VITE_API_BASE_URL=http://localhost:5050
+```
+
+If `chess/server/config.env` was ever committed, remove it from git tracking and rotate the exposed secrets immediately:
+
+```bash
+git rm --cached chess/server/config.env
 ```
 
 ---

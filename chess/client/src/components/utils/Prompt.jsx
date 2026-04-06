@@ -1,4 +1,5 @@
 import React from 'react';
+import './Prompt.css';
 
 export default function Prompt({ open, title, message, okText = 'OK', cancelText = 'Cancel', onConfirm, onCancel }) {
   if (!open) return null;

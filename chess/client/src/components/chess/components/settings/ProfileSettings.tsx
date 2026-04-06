@@ -1,12 +1,13 @@
 import "./profile-settings.css";
+import ChessSection from "../shared/ChessSection";
 
 export default function ProfileSettings() {
   return (
-    <section className="chess-settings-view__card settings-profile">
-      <h3>Profile</h3>
-      <p className="chess-settings-view__hint">
-        Profile settings are coming next. Current saves are linked to guest/session or user account.
-      </p>
-    </section>
+    <ChessSection
+      className="chess-settings-view__card settings-profile"
+      title="Profile"
+      hint="Profile settings are coming next. Current saves are linked to guest/session or user account."
+      hintClassName="chess-settings-view__hint chess-section__hint"
+    />
   );
 }

@@ -38,7 +38,6 @@ export type ChessPanelActionsContextValue = {
   onNextMove: () => void;
   onApplySuggestedMove: () => void;
   onOpenMoves: () => void;
-  onOpenSettings: () => void;
 };
 
 const ChessPanelStateContext = createContext<ChessPanelStateContextValue | null>(null);

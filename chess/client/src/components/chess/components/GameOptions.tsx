@@ -1,7 +1,8 @@
-import React from "react";
 import "../styles/game-options.css";
 import { useChessPanelActions, useChessPanelState } from "../context/ChessPanelContext";
 import { GameMode } from "../context/chessPanel.types";
+import ChessButton from "./shared/ChessButton";
+import ChessSection from "./shared/ChessSection";
 
 export type PieceColorPreset = "classic" | "sapphire" | "emerald" | "ruby" | "gold";
 export type { GameMode };
@@ -41,47 +42,36 @@ export default function GameOptions() {
 
   return (
     <div className="game-options">
-      <div className="option-section">
-        <h4>Play</h4>
+      <ChessSection className="option-section" title="Play" titleAs="h4" titleClassName="option-section__title">
         <div className="play-mode-buttons" role="group" aria-label="Play mode">
-          <button
-            type="button"
-            className={`play-mode-btn${gameMode === "vs-computer" ? " is-active" : ""}`}
-            onClick={handleQuickStartComputer}
-          >
+          <ChessButton variant="panel" active={gameMode === "vs-computer"} fullWidth onClick={handleQuickStartComputer}>
             VS Computer
-          </button>
-          <button
-            type="button"
-            className={`play-mode-btn${gameMode === "vs-player" ? " is-active" : ""}`}
-            onClick={() => onGameModeChange("vs-player")}
-          >
+          </ChessButton>
+          <ChessButton variant="panel" active={gameMode === "vs-player"} fullWidth onClick={() => onGameModeChange("vs-player")}>
             VS Player
-          </button>
-          <button
-            type="button"
-            className={`play-mode-btn${gameMode === "practice" ? " is-active" : ""}`}
-            onClick={() => onGameModeChange("practice")}
-          >
+          </ChessButton>
+          <ChessButton variant="panel" active={gameMode === "practice"} fullWidth onClick={() => onGameModeChange("practice")}>
             Practice
-          </button>
-          <button
-            type="button"
-            className={`play-mode-btn${gameMode === "online" ? " is-active" : ""}`}
-            onClick={() => onGameModeChange("online")}
-          >
+          </ChessButton>
+          <ChessButton variant="panel" active={gameMode === "online"} fullWidth onClick={() => onGameModeChange("online")}>
             Online
-          </button>
+          </ChessButton>
         </div>
-      </div>
+      </ChessSection>
 
       {gameMode === "vs-computer" && !computerGameConfigured && (
-        <div className="option-section computer-options">
-          <h4>Computer Game</h4>
-          <div className="option-hint-box" role="status" aria-live="polite">
+        <ChessSection
+          className="option-section computer-options"
+          title="Computer Game"
+          titleAs="h4"
+          titleClassName="option-section__title"
+          hint={
+            <span className="option-hint-box" role="status" aria-live="polite">
             Choose your level and color.
             {computerSetupRequired ? " Select Black or White to start." : ""}
-          </div>
+            </span>
+          }
+        >
           <div className={`level-slider-wrap${computerLevelLocked ? " option-group-disabled" : ""}`}>
             <select
               id="computer-level"
@@ -100,10 +90,10 @@ export default function GameOptions() {
             {computerLevelLocked && <small className="level-lock-hint">Level is locked after game start.</small>}
           </div>
           <div className="new-game-row">
-            <button type="button" className="mode-action-btn" onClick={() => onStartComputerGame("black")}>Black</button>
-            <button type="button" className="mode-action-btn" onClick={() => onStartComputerGame("white")}>White</button>
+            <ChessButton variant="panel" align="center" onClick={() => onStartComputerGame("black")}>Black</ChessButton>
+            <ChessButton variant="panel" align="center" onClick={() => onStartComputerGame("white")}>White</ChessButton>
           </div>
-        </div>
+        </ChessSection>
       )}
 
       {gameMode === "online" && (
@@ -114,8 +104,7 @@ export default function GameOptions() {
 
       {isPractice && (
         <>
-          <div className="option-section">
-            <h4>Turn</h4>
+          <ChessSection className="option-section" title="Turn" titleAs="h4" titleClassName="option-section__title">
             <div className="turn-radios">
               <label>
                 <input
@@ -138,10 +127,9 @@ export default function GameOptions() {
                 Black
               </label>
             </div>
-          </div>
+          </ChessSection>
 
-          <div className="option-section">
-            <h4>Castling Rights</h4>
+          <ChessSection className="option-section" title="Castling Rights" titleAs="h4" titleClassName="option-section__title">
             <div className="castling-checkboxes">
               <label>
                 <input
@@ -176,7 +164,7 @@ export default function GameOptions() {
                 Black O-O-O
               </label>
             </div>
-          </div>
+          </ChessSection>
         </>
       )}
     </div>

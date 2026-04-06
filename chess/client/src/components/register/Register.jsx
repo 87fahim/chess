@@ -1,7 +1,10 @@
 import React, { useState } from 'react';
-import './Register.css';
 import { Link, useNavigate } from 'react-router-dom';
-import PageTitle from '../pagetitle/PageTitle';
+import { apiFetch } from '../../utils/api';
+import AuthShell from '../auth/AuthShell';
+import AuthField from '../auth/AuthField';
+import AuthFeedback from '../auth/AuthFeedback';
+import { getPasswordStrength, validateRegistrationForm } from '../auth/authValidators';
 
 const CreateAccount = () => {
   const [formData, setFormData] = useState({
@@ -10,202 +13,135 @@ const CreateAccount = () => {
     password: '',
     confirmPassword: '',
   });
-
   const [errors, setErrors] = useState({});
-  const [apiResponse, setApiResponse] = useState(null);
+  const [status, setStatus] = useState(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [passwordStrength, setPasswordStrength] = useState('Weak');
   const navigate = useNavigate();
+  const passwordStrength = getPasswordStrength(formData.password);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
+  const handleChange = (event) => {
+    const { name, value } = event.target;
     setFormData((prevData) => ({ ...prevData, [name]: value }));
     setErrors((prevErrors) => ({ ...prevErrors, [name]: '' }));
-
-    if (name === 'password') updatePasswordStrength(value);
+    setStatus(null);
   };
 
   const validateForm = () => {
-    const newErrors = {};
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    // requires 8+ chars, 1 uppercase, 1 number; special chars optional
-    const passwordRegex = /^(?=.*[A-Z])(?=.*\d)[A-Za-z\d@$!%*?&]{8,}$/;
-
-    // if (!formData.username.trim()) newErrors.username = 'Username is required.';
-    // if (!emailRegex.test(formData.email)) newErrors.email = 'Please enter a valid email address.';
-    // if (!passwordRegex.test(formData.password)) {
-    //   newErrors.password =
-    //     'Password must be at least 8 characters long, contain one uppercase letter and one number.';
-    // }
-    // if (formData.password !== formData.confirmPassword)
-    //   newErrors.confirmPassword = 'Passwords do not match.';
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+    const nextErrors = validateRegistrationForm(formData);
+    setErrors(nextErrors);
+    return Object.keys(nextErrors).length === 0;
   };
 
-  const updatePasswordStrength = (password) => {
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumbers = /\d/.test(password);
-    const hasSpecialChars = /[@$!%*?&]/.test(password);
-    const isLongEnough = password.length >= 8;
-
-    if (isLongEnough && hasUpperCase && hasLowerCase && hasNumbers && hasSpecialChars) {
-      setPasswordStrength('Strong');
-    } else if (isLongEnough && (hasUpperCase || hasLowerCase) && (hasNumbers || hasSpecialChars)) {
-      setPasswordStrength('Moderate');
-    } else {
-      setPasswordStrength('Weak');
-    }
-  };
-
-  const getStrengthClass = () => {
-    const v = (passwordStrength || '').toLowerCase();
-    if (v === 'strong') return 'strong';
-    if (v === 'moderate') return 'moderate';
-    return 'weak';
-  };
-
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async (event) => {
+    event.preventDefault();
 
     if (!validateForm()) return;
 
     setIsSubmitting(true);
-    setApiResponse(null);
+    setStatus(null);
 
     try {
-      const response = await fetch('http://localhost:5050/api/auth/register', {
+      const response = await apiFetch('/api/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData), // sending as-is; server should hash/store securely
+        body: JSON.stringify({
+          username: formData.username.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
+        }),
       });
 
       if (response.ok) {
-        const data = await response.json();
-        setApiResponse({ success: true, message: data.message || 'Account created!' });
         navigate('/login', { state: { message: 'Account was created successfully!' } });
       } else {
         const errorData = await response.json().catch(() => ({}));
-        setApiResponse({ success: false, message: errorData.message || 'An error occurred.' });
+        setStatus({ tone: 'error', message: errorData.message || 'An error occurred.' });
       }
-    } catch (error) {
-      setApiResponse({ success: false, message: 'Network error. Please try again later.' });
+    } catch {
+      setStatus({ tone: 'error', message: 'Network error. Please try again later.' });
     } finally {
       setIsSubmitting(false);
     }
   };
 
   return (
-    <div className="register-wrapper">
-      <div className="create-account">
-        <PageTitle title="✍️ Register" style="simple" />
-        <p>Welcome to the registration page. Please fill out your details below.</p>
-
-        <form onSubmit={handleSubmit} noValidate>
-          <label htmlFor="username">Username</label>
-          <input
-            type="text"
-            id="username"
-            name="username"
-            value={formData.username}
-            onChange={handleChange}
-            placeholder="Enter your username"
-            autoComplete="username"
-            required
-            aria-invalid={!!errors.username}
-            aria-describedby={errors.username ? 'username-error' : undefined}
-          />
-          {errors.username && (
-            <p id="username-error" className="error-message">
-              {errors.username}
-            </p>
-          )}
-
-          <label htmlFor="email">Email</label>
-          <input
-            type="email"
-            id="email"
-            name="email"
-            value={formData.email}
-            onChange={handleChange}
-            placeholder="Enter your email"
-            autoComplete="email"
-            required
-            aria-invalid={!!errors.email}
-            aria-describedby={errors.email ? 'email-error' : undefined}
-          />
-          {errors.email && (
-            <p id="email-error" className="error-message">
-              {errors.email}
-            </p>
-          )}
-
-          <label htmlFor="password">Password</label>
-          <input
-            type="password"
-            id="password"
-            name="password"
-            value={formData.password}
-            onChange={handleChange}
-            placeholder="Enter your password"
-            autoComplete="new-password"
-            required
-            aria-invalid={!!errors.password}
-            aria-describedby={errors.password ? 'password-error' : undefined}
-          />
-          {errors.password && (
-            <p id="password-error" className="error-message">
-              {errors.password}
-            </p>
-          )}
-
-          <div className="password-strength">
-            Password Strength: <span className={getStrengthClass()}>{passwordStrength}</span>
-          </div>
-
-          <label htmlFor="confirmPassword">Confirm Password</label>
-          <input
-            type="password"
-            id="confirmPassword"
-            name="confirmPassword"
-            value={formData.confirmPassword}
-            onChange={handleChange}
-            placeholder="Confirm your password"
-            autoComplete="new-password"
-            required
-            aria-invalid={!!errors.confirmPassword}
-            aria-describedby={errors.confirmPassword ? 'confirmPassword-error' : undefined}
-          />
-          {errors.confirmPassword && (
-            <p id="confirmPassword-error" className="error-message">
-              {errors.confirmPassword}
-            </p>
-          )}
-
-          <button
-            type="submit"
-            className="register-button"
-            disabled={isSubmitting}
-            aria-busy={isSubmitting}
-          >
-            {isSubmitting ? 'Registering...' : 'Register'}
-          </button>
-        </form>
-
-        {apiResponse && (
-          <div className={`api-response ${apiResponse.success ? 'success' : 'error'}`}>
-            {apiResponse.message}
-          </div>
-        )}
-
-        <p className="have-account-text">Already have an account?</p>
-        <Link to="/login" className="have-account">
-          <button className="login-button-register-page" type="button">Login</button>
-        </Link>
-      </div>
-    </div>
+    <AuthShell
+      title="Create Account"
+      description="Set up a reusable ChessApp account profile with secure credentials and personalized game settings."
+      footer={
+        <>
+          <p className="auth-footer__text">Already have an account?</p>
+          <Link to="/login" className="auth-link-button auth-link-button--secondary">
+            Log In
+          </Link>
+        </>
+      }
+    >
+      <AuthFeedback message={status?.message} tone={status?.tone} />
+      <form onSubmit={handleSubmit} className="auth-form" noValidate>
+        <AuthField
+          id="username"
+          name="username"
+          label="Username"
+          type="text"
+          value={formData.username}
+          onChange={handleChange}
+          placeholder="Enter your username"
+          autoComplete="username"
+          required
+          error={errors.username}
+          disabled={isSubmitting}
+        />
+        <AuthField
+          id="email"
+          name="email"
+          label="Email"
+          type="email"
+          value={formData.email}
+          onChange={handleChange}
+          placeholder="Enter your email"
+          autoComplete="email"
+          required
+          error={errors.email}
+          disabled={isSubmitting}
+        />
+        <AuthField
+          id="password"
+          name="password"
+          label="Password"
+          type="password"
+          value={formData.password}
+          onChange={handleChange}
+          placeholder="Enter your password"
+          autoComplete="new-password"
+          required
+          error={errors.password}
+          disabled={isSubmitting}
+        />
+        <p className="auth-strength">
+          Password Strength:{' '}
+          <span className={`auth-strength__value auth-strength__value--${passwordStrength.tone}`}>
+            {passwordStrength.label}
+          </span>
+        </p>
+        <AuthField
+          id="confirmPassword"
+          name="confirmPassword"
+          label="Confirm Password"
+          type="password"
+          value={formData.confirmPassword}
+          onChange={handleChange}
+          placeholder="Confirm your password"
+          autoComplete="new-password"
+          required
+          error={errors.confirmPassword}
+          disabled={isSubmitting}
+        />
+        <button type="submit" className="auth-submit" disabled={isSubmitting} aria-busy={isSubmitting}>
+          {isSubmitting ? 'Registering...' : 'Register'}
+        </button>
+      </form>
+    </AuthShell>
   );
 };
 
